@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ConvoHub — Admin (legacy)</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <style>
+      .admin-wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem;
+      }
+      .admin-wrap h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.5rem;
+      }
+      .admin-wrap .tag {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--dim);
+        margin-bottom: 1.5rem;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1rem;
+      }
+      .card h2 {
+        margin: 0 0 0.75rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .row input[type="text"],
+      .row input[type="number"] {
+        flex: 1;
+        min-width: 140px;
+        padding: 0.45rem 0.55rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--elevated);
+        color: var(--text);
+      }
+      .stat {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+      .err {
+        color: #f87171;
+        font-size: 0.85rem;
+        margin-top: 0.35rem;
+      }
+    </style>
+    <style>
+      body {
+        background: var(--bg-app);
+      }
+      .admin-wrap h1 {
+        letter-spacing: -0.3px;
+      }
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+      }
+      .card:hover {
+        background: var(--bg-card-hover);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+      }
+      .row input[type="text"],
+      .row input[type="number"] {
+        background: var(--bg-input);
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+      }
+      .row input[type="text"]:focus,
+      .row input[type="number"]:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      }
+      @media (max-width: 720px) {
+        .admin-wrap {
+          padding: 1rem 0.75rem;
+        }
+        .admin-wrap h1 {
+          font-size: 1.25rem;
+        }
+        .card {
+          padding: 0.85rem 0.85rem;
+          border-radius: var(--radius-sm);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="admin-wrap">
+      <h1>ConvoHub admin (legacy)</h1>
+      <p class="tag">Workspace &amp; team operations (legacy Flask admin parity)</p>
+      <p class="muted small" id="whoami"></p>
+
+      <div class="card">
+        <h2>Current workspace</h2>
+        <p id="ws-summary" class="stat"></p>
+        <p id="user-count" class="stat"></p>
+      </div>
+
+      <div class="card" id="super-panel" style="display: none">
+        <h2>All workspaces (superadmin)</h2>
+        <ul id="ws-list" style="margin: 0; padding-left: 1.1rem; font-size: 0.9rem"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Teams in your workspace</h2>
+        <ul id="team-list" style="margin: 0; padding-left: 1.1rem; font-size: 0.9rem"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Create team</h2>
+        <div class="row">
+          <input type="text" id="new-team-name" placeholder="Team name" />
+          <input type="number" id="target-ws-id" placeholder="Workspace id (superadmin)" style="display: none" />
+        </div>
+        <button type="button" class="btn primary" id="btn-create-team">Create team</button>
+        <div class="err" id="err-team"></div>
+      </div>
+
+      <div class="card">
+        <h2>Workspace settings</h2>
+        <div class="row">
+          <input type="text" id="ws-name" placeholder="Display name" />
+          <input type="text" id="ws-theme" placeholder="Theme color (#hex)" />
+        </div>
+        <button type="button" class="btn ghost" id="btn-save-ws">Save name / theme</button>
+        <div class="err" id="err-ws"></div>
+      </div>
+
+      <div class="card">
+        <h2>Flags</h2>
+        <div class="actions">
+          <button type="button" class="btn ghost" id="btn-toggle-private">Toggle ecosystem private</button>
+          <button type="button" class="btn ghost" id="btn-toggle-groups">Toggle allow group creation</button>
+        </div>
+        <p class="muted small" style="margin-top: 0.5rem">Uses workspace id from your session (or target field for superadmin).</p>
+        <div class="err" id="err-flags"></div>
+      </div>
+
+      <div class="card">
+        <h2>Team public deploy</h2>
+        <div class="row">
+          <input type="text" id="deploy-team-name" placeholder="Exact team name" />
+          <label class="muted small" style="display: flex; align-items: center; gap: 0.35rem">
+            <input type="checkbox" id="deploy-enabled" /> can_deploy_publicly
+          </label>
+        </div>
+        <button type="button" class="btn ghost" id="btn-deploy">Update deployment flag</button>
+        <div class="err" id="err-deploy"></div>
+      </div>
+
+      <div class="actions" style="margin-top: 1.5rem">
+        <a class="btn primary" href="/dashboard">Open member workspace</a>
+        <a class="btn ghost" href="/">Home</a>
+        <button type="button" class="btn ghost" id="btn-refresh">Refresh data</button>
+        <button type="button" class="btn ghost" id="btn-logout">Sign out</button>
+      </div>
+    </div>
+
+    <script type="application/json" id="admin-bootstrap-json">__ADMIN_BOOT_JSON__</script>
+    <script>
+      const boot = JSON.parse(document.getElementById("admin-bootstrap-json").textContent);
+
+      async function api(path, opts) {
+        const o = Object.assign({ credentials: "include", headers: {} }, opts || {});
+        if (opts && opts.body && typeof opts.body === "string") {
+          o.headers["Content-Type"] = "application/json";
+        }
+        const r = await fetch(path, o);
+        const text = await r.text();
+        let data;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          data = { raw: text };
+        }
+        if (!r.ok) throw new Error((data && data.detail) || (data && data.error) || r.statusText);
+        return data;
+      }
+
+      function render() {
+        const u = boot.user;
+        document.getElementById("whoami").textContent =
+          u.email + " · role " + u.role + " · workspace_id " + u.workspace_id;
+
+        const cw = boot.current_workspace;
+        document.getElementById("ws-summary").textContent = cw
+          ? "Workspace #" + cw.id + " — " + cw.name + (cw.is_private ? " (private)" : " (public)")
+          : "No workspace";
+        document.getElementById("user-count").textContent =
+          "Users in this workspace: " + (boot.stats && boot.stats.users_in_current_workspace);
+
+        if (boot.is_superadmin) {
+          document.getElementById("super-panel").style.display = "block";
+          document.getElementById("target-ws-id").style.display = "block";
+          const ul = document.getElementById("ws-list");
+          ul.innerHTML = "";
+          for (const w of boot.workspaces || []) {
+            const li = document.createElement("li");
+            li.textContent = "#" + w.id + " " + w.name + (w.is_private ? " · private" : "");
+            ul.appendChild(li);
+          }
+        }
+
+        const tl = document.getElementById("team-list");
+        tl.innerHTML = "";
+        for (const t of boot.teams || []) {
+          const li = document.createElement("li");
+          li.textContent = t.name + (t.can_deploy_publicly ? " · can deploy publicly" : "");
+          tl.appendChild(li);
+        }
+
+        if (cw) {
+          document.getElementById("ws-name").value = cw.name || "";
+        }
+      }
+
+      async function reloadBoot() {
+        const d = await api("/admin/api/overview");
+        Object.assign(boot, d);
+        render();
+      }
+
+      document.getElementById("btn-create-team").addEventListener("click", async () => {
+        document.getElementById("err-team").textContent = "";
+        const name = document.getElementById("new-team-name").value.trim();
+        if (!name) return;
+        const body = { name };
+        const wid = document.getElementById("target-ws-id");
+        if (wid.style.display !== "none" && wid.value) body.workspace_id = Number(wid.value);
+        try {
+          await api("/admin/create-team", { method: "POST", body: JSON.stringify(body) });
+          document.getElementById("new-team-name").value = "";
+          await reloadBoot();
+        } catch (e) {
+          document.getElementById("err-team").textContent = e.message || String(e);
+        }
+      });
+
+      document.getElementById("btn-save-ws").addEventListener("click", async () => {
+        document.getElementById("err-ws").textContent = "";
+        const patch = {};
+        const n = document.getElementById("ws-name").value.trim();
+        const th = document.getElementById("ws-theme").value.trim();
+        if (n) patch.name = n;
+        if (th) patch.theme_color = th;
+        const widField = document.getElementById("target-ws-id");
+        if (boot.is_superadmin && widField.value) patch.workspace_id = Number(widField.value);
+        try {
+          await api("/admin/api/update_workspace", { method: "POST", body: JSON.stringify(patch) });
+          await reloadBoot();
+        } catch (e) {
+          document.getElementById("err-ws").textContent = e.message || String(e);
+        }
+      });
+
+      document.getElementById("btn-toggle-private").addEventListener("click", async () => {
+        document.getElementById("err-flags").textContent = "";
+        const cw = boot.current_workspace;
+        const next = !(cw && cw.is_private);
+        const body = { is_private: next };
+        const widField = document.getElementById("target-ws-id");
+        if (boot.is_superadmin && widField.value) body.workspace_id = Number(widField.value);
+        try {
+          await api("/admin/toggle_ecosystem_visibility", { method: "POST", body: JSON.stringify(body) });
+          await reloadBoot();
+        } catch (e) {
+          document.getElementById("err-flags").textContent = e.message || String(e);
+        }
+      });
+
+      document.getElementById("btn-toggle-groups").addEventListener("click", async () => {
+        document.getElementById("err-flags").textContent = "";
+        const cw = boot.current_workspace;
+        const next = !(cw && cw.allow_group_creation);
+        const body = { allow_group_creation: next };
+        const widField = document.getElementById("target-ws-id");
+        if (boot.is_superadmin && widField.value) body.workspace_id = Number(widField.value);
+        try {
+          await api("/admin/toggle_group_creation", { method: "POST", body: JSON.stringify(body) });
+          await reloadBoot();
+        } catch (e) {
+          document.getElementById("err-flags").textContent = e.message || String(e);
+        }
+      });
+
+      document.getElementById("btn-deploy").addEventListener("click", async () => {
+        document.getElementById("err-deploy").textContent = "";
+        const team_name = document.getElementById("deploy-team-name").value.trim();
+        if (!team_name) return;
+        try {
+          await api("/admin/update_team_deployment", {
+            method: "POST",
+            body: JSON.stringify({
+              team_name,
+              can_deploy_publicly: document.getElementById("deploy-enabled").checked,
+            }),
+          });
+          await reloadBoot();
+        } catch (e) {
+          document.getElementById("err-deploy").textContent = e.message || String(e);
+        }
+      });
+
+      document.getElementById("btn-refresh").addEventListener("click", () => reloadBoot().catch(console.error));
+      document.getElementById("btn-logout").addEventListener("click", async () => {
+        await fetch("/auth/logout", { method: "POST", credentials: "include" });
+        window.location.href = "/";
+      });
+
+      render();
+    </script>
+  </body>
+</html>

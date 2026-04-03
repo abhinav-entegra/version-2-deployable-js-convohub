@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ConvoHub — Member sign in</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <style>
+      .login-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1.25rem;
+      }
+      .login-wrap {
+        width: 100%;
+        max-width: 380px;
+      }
+      .login-wrap h1 {
+        margin: 0 0 0.35rem;
+        font-size: 1.65rem;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+      }
+      .login-wrap .tagline {
+        margin: 0 0 1.5rem;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .login-card {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        padding: 1.35rem 1.25rem;
+      }
+      .login-card h2 {
+        margin: 0 0 1rem;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--dim);
+        font-weight: 600;
+      }
+      .pw-policy {
+        margin: 0 0 1rem;
+        padding: 0.65rem 0.75rem;
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .auth-error {
+        margin: 0 0 0.75rem;
+        padding: 0.5rem 0.65rem;
+        font-size: 12px;
+        color: var(--text);
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+      }
+      .auth-error.hidden {
+        display: none;
+      }
+      .login-footer {
+        margin: 1.25rem 0 0;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .login-footer a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .login-footer a:hover {
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-page">
+      <div class="login-wrap">
+        <h1>ConvoHub</h1>
+        <p class="tagline">Member sign in with your work email and password.</p>
+
+        <div class="login-card">
+          <h2>Member</h2>
+          <p id="auth-error-client" class="auth-error hidden" role="alert"></p>
+          <p class="pw-policy">
+            There is no “forgot password” on this page. Only an administrator can change your password—contact
+            your admin and ask them to update it for you.
+          </p>
+          <form id="form-client" class="stack" style="margin-top: 0">
+            <label class="field">
+              <span>Email</span>
+              <input
+                type="email"
+                name="email"
+                required
+                autocomplete="username"
+                placeholder="abhinav@entegraportal.com"
+              />
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input
+                type="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Same as email when seeded"
+              />
+            </label>
+            <button type="submit" class="btn primary">Sign in</button>
+          </form>
+          <p class="muted small" style="margin: 0.75rem 0 0; line-height: 1.45">
+            Seeded member account: <strong>abhinav@entegraportal.com</strong> — password is the same string. Run
+            <code style="font-size: 11px">node scripts/ensure-login-user.mjs</code> with
+            <code style="font-size: 11px">SEED_ROLE=user</code> (see script comments).
+          </p>
+        </div>
+
+        <p class="login-footer">
+          <a href="/admin/login">Administrator sign-in</a>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        function showErr(msg) {
+          var el = document.getElementById("auth-error-client");
+          if (!el) return;
+          if (!msg) {
+            el.textContent = "";
+            el.classList.add("hidden");
+            return;
+          }
+          el.textContent = msg;
+          el.classList.remove("hidden");
+        }
+
+        async function postLogin(url, email, password) {
+          var r = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ email: email.trim(), password: password }),
+          });
+          var data = await r.json().catch(function () {
+            return {};
+          });
+          if (!r.ok) {
+            var d = data.detail;
+            var msg =
+              typeof d === "string"
+                ? d
+                : d && typeof d === "object"
+                  ? d.message || JSON.stringify(d)
+                  : data.error || "Sign-in failed (" + r.status + ")";
+            throw new Error(msg);
+          }
+          return data;
+        }
+
+        document.getElementById("form-client").addEventListener("submit", async function (e) {
+          e.preventDefault();
+          showErr("");
+          var fd = new FormData(e.target);
+          try {
+            await postLogin("/auth/login/client", fd.get("email"), fd.get("password"));
+            window.location.href = "/dashboard";
+          } catch (err) {
+            showErr(err.message || String(err));
+          }
+        });
+
+        fetch("/auth/session", { credentials: "include" })
+          .then(function (r) {
+            if (!r.ok) return;
+            return r.json();
+          })
+          .then(function (d) {
+            if (!d || !d.user) return;
+            var role = String(d.user.role || "").toLowerCase();
+            if (role === "admin" || role === "superadmin") window.location.replace("/admin/dashboard");
+            else window.location.replace("/dashboard");
+          })
+          .catch(function () {});
+      })();
+    </script>
+  </body>
+</html>

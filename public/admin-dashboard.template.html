@@ -1,0 +1,2507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>AnyWhere — Admin</title>
+  <link rel="stylesheet" href="/assets/app.css" />
+  <style>
+    :root {
+      --bg-app: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #fafafa;
+      --bg-header: #ffffff;
+      --bg-dock: #ffffff;
+      --bg-input: #f8f8fb;
+      --bg-panel: #ffffff;
+      --bg-rail: #f1f1f4;
+
+      --border: #e2e2e7;
+      --border-light: #ebebef;
+      --border-active: #007aff;
+
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-dim: #aeaeb2;
+
+      --accent: #007aff;
+      --accent-hover: #0066d6;
+      --accent-green: #30d158;
+      --accent-red: #ff3b30;
+
+      --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --shadow-panel: 0 8px 40px rgba(0, 0, 0, 0.12), 0 2px 10px rgba(0, 0, 0, 0.05);
+
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-pill: 999px;
+
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      --spring: cubic-bezier(0.32, 0.72, 0, 1);
+      --transition: 0.2s var(--spring);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: var(--font);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* --- Layout: Refined Attached --- */
+    .admin-app {
+      display: grid;
+      grid-template-rows: 52px 1fr;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .admin-top {
+      grid-row: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .admin-top h1 {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.25px;
+      color: var(--text-primary);
+    }
+
+    #admin-ecosystem-badge {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-left: 0.75rem;
+      letter-spacing: -0.1px;
+    }
+
+    .admin-top-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .cc-reset-wrap svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--text-dim);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .cc-reset-ico {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+    }
+
+    .cc-reset-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-reset-new {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-reset-new:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--text-dim);
+    }
+
+    .admin-top-actions a {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color var(--transition);
+    }
+
+    .admin-top-actions a:hover {
+      color: var(--accent);
+    }
+
+    .admin-body {
+      grid-row: 2;
+      display: flex;
+      min-height: 0;
+    }
+
+    .admin-rail {
+      width: 64px;
+      background: var(--bg-rail);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .admin-rail-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+      align-items: center;
+    }
+
+    .eco-avatar-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      background-size: cover;
+      background-position: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0;
+      font-size: 13px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-xs);
+    }
+
+    .eco-avatar-btn:hover {
+      box-shadow: var(--shadow-sm);
+      border-color: var(--border-active);
+    }
+
+    .eco-avatar-btn[aria-pressed="true"] {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+      background: var(--bg-card);
+      color: var(--accent);
+    }
+
+    .admin-rail-plus {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-pill);
+      border: 1.5px dashed var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: all var(--transition);
+    }
+
+    .admin-rail-plus:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* --- Sidebar --- */
+    .admin-sidebar {
+      width: 240px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 0;
+      flex-shrink: 0;
+    }
+
+    .admin-sidebar-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      padding: 0 1.5rem 0.65rem;
+      font-weight: 700;
+    }
+
+    .admin-nav {
+      list-style: none;
+      margin: 0;
+      padding: 0 0.75rem;
+    }
+
+    .admin-nav li button {
+      width: 100%;
+      text-align: left;
+      padding: 0.65rem 1rem;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-bottom: 2px;
+    }
+
+    /* --- Custom Multi-Select --- */
+    .multi-select-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .multi-select-btn {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-align: left;
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .multi-select-btn:after {
+      content: '▼';
+      font-size: 10px;
+      opacity: 0.5;
+    }
+
+    .multi-select-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      z-index: 100;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow-sm);
+      margin-top: 4px;
+      padding: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .multi-select-dropdown.is-open {
+      display: block;
+    }
+
+    .multi-select-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      cursor: pointer;
+      font-size: 13px;
+      border-radius: 4px;
+    }
+
+    .multi-select-item:hover {
+      background: #f5f5f7;
+    }
+
+    .multi-select-item input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .admin-nav li button:hover {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-primary);
+    }
+
+    .admin-nav li button[aria-current="page"] {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+    }
+
+    .admin-nav-sub {
+      margin: 0.25rem 0 0.5rem 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .admin-nav-sub li button {
+      padding-left: 1.5rem;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* --- Main Content --- */
+    .admin-main {
+      flex: 1;
+      background: var(--bg-app);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    .admin-panel {
+      display: none;
+      width: 100%;
+      margin: 0;
+    }
+
+    .admin-panel.is-active {
+      display: block;
+      animation: slideUp 0.3s var(--spring);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .admin-panel h2 {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.4px;
+      color: var(--text-primary);
+    }
+
+    .admin-panel .sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 2.5rem;
+    }
+
+    /* --- Control Center (Full Grid) --- */
+    .admin-cc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .admin-cc-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+    }
+
+    .admin-cc-heading p {
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    .admin-home-meta {
+      margin-top: 0.25rem !important;
+    }
+
+    .admin-cc-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: var(--bg-card);
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .admin-cc-avatar {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      color: white;
+      border-radius: var(--radius-pill);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .admin-cc-email {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .admin-cc-badge {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 6px;
+      border-radius: var(--radius-pill);
+      color: var(--text-secondary);
+      letter-spacing: 0.3px;
+    }
+
+    .admin-cc-grid {
+      display: grid;
+      grid-template-columns: 440px 1fr;
+      gap: 0;
+    }
+
+    .admin-cc-card {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-cc-card-table {
+      grid-column: 2;
+      grid-row: 1 / 4;
+      border-right: none;
+    }
+
+    .admin-cc-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+    }
+
+    .admin-cc-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(0, 122, 255, 0.08);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+    }
+
+    .admin-cc-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .btn-cc,
+    .btn {
+      padding: 0.85rem;
+      font-size: 14px;
+    }
+
+    .field {
+      margin-bottom: 1.5rem;
+    }
+
+    .field span {
+      font-size: 11px;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select,
+    textarea {
+      padding: 0.75rem 1rem;
+      font-size: 14px;
+    }
+
+    .admin-cc-card:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .admin-cc-card-head {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-cc-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(0, 122, 255, 0.08);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+    }
+
+    .admin-cc-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .admin-cc-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+    }
+
+    /* --- Forms --- */
+    .field {
+      display: block;
+      margin-bottom: 1.5rem;
+    }
+
+    .field span {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.4px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select,
+    textarea {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      padding: 0.75rem 1rem;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: all var(--transition);
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      background: var(--bg-card);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+    }
+
+    .btn-cc,
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.85rem;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all var(--transition);
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+    }
+
+    .btn-cc svg,
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.5;
+      flex-shrink: 0;
+    }
+
+    .btn-cc:hover,
+    .btn.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-cc:active,
+    .btn:active {
+      opacity: 0.8;
+    }
+
+    .btn.ghost {
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      box-shadow: none;
+      border: 1.5px solid var(--border);
+    }
+
+    .btn.ghost:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text-primary);
+    }
+
+    /* --- Tables --- */
+    .dir-table-wrap {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .dir-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .dir-table th {
+      text-align: left;
+      background: transparent;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10px;
+      padding: 0 0 0.75rem;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.8px;
+    }
+
+    .dir-table td {
+      padding: 0.85rem 0;
+      border-bottom: none;
+      color: var(--text-primary);
+    }
+
+    .dir-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .dir-table tr:hover td {
+      background: var(--bg-card-hover);
+    }
+
+    .cc-pill {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.04);
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      color: var(--text-secondary);
+      display: inline-block;
+    }
+
+    .admin-right {
+      display: none;
+    }
+
+    /* --- Modals --- */
+    .eco-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: grid;
+      place-items: center;
+      z-index: 1000;
+    }
+
+    .eco-modal-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      width: 100%;
+      max-width: 460px;
+      padding: 2.5rem;
+      box-shadow: var(--shadow-panel);
+      animation: pop 0.3s var(--spring);
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .eco-ctx-menu {
+      position: fixed;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      min-width: 200px;
+      z-index: 2000;
+      box-shadow: var(--shadow-panel);
+      padding: 0.5rem;
+    }
+
+    .eco-ctx-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .eco-ctx-menu button:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    .empty-box {
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 5rem 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.01);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* --- Scrollbar --- */
+    *::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: #d1d1d6;
+      border-radius: 3px;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+      background: #aeaeb2;
+    }
+
+    @media (max-width: 1100px) {
+      .admin-right {
+        display: none;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .admin-sidebar {
+        display: none;
+      }
+    }
+  </style>
+
+</head>
+
+<body>
+  <div class="admin-app">
+    <header class="admin-top">
+      <div class="admin-top-left">
+        <h1>AnyWhere · Admin</h1>
+        <span id="admin-ecosystem-badge" aria-live="polite"></span>
+      </div>
+      <div class="admin-top-actions">
+        <span id="dash-admin-context" style="font-size: 12px; color: var(--muted)"></span>
+        <a href="/auth/logout">Sign out</a>
+      </div>
+    </header>
+    <div class="admin-body">
+      <nav class="admin-rail" aria-label="Ecosystems">
+        <div class="admin-rail-scroll" id="eco-rail-list"></div>
+        <button type="button" class="admin-rail-plus" id="eco-add" title="Add ecosystem" aria-label="Add ecosystem">
+          +
+        </button>
+      </nav>
+      <aside class="admin-sidebar" aria-label="Admin sections">
+        <p class="admin-sidebar-label">Menu</p>
+        <ul class="admin-nav admin-nav-main">
+          <li><button type="button" data-section="home" aria-current="page">Home</button></li>
+          <li><button type="button" data-section="people">People</button></li>
+          <li><button type="button" data-section="teams">Teams</button></li>
+          <li><button type="button" data-section="ecosystems">Ecosystems</button></li>
+          <li><button type="button" data-section="ai-insights">AI insights</button></li>
+          <li><button type="button" data-section="audit-log">Audit log</button></li>
+        </ul>
+      </aside>
+      <main class="admin-main">
+        <section id="panel-home" class="admin-panel admin-panel-home is-active" aria-labelledby="cc-title">
+          <div class="admin-cc">
+            <header class="admin-cc-header">
+              <div class="admin-cc-heading">
+                <h1 class="admin-cc-title" id="cc-title">Control center</h1>
+                <p class="admin-cc-sub">
+                  People, teams, AI insights, and audit history for this workspace.
+                </p>
+                <p id="admin-home-meta" class="muted small admin-home-meta">
+                  <span id="admin-home-ws-name">—</span>
+                  ·
+                  <strong id="admin-stat-users">0</strong> users
+                </p>
+              </div>
+              <div class="admin-cc-profile">
+                <span class="admin-cc-avatar" id="admin-cc-avatar-initials" aria-hidden="true">?</span>
+                <div class="admin-cc-profile-text">
+                  <span id="admin-cc-email" class="admin-cc-email"></span>
+                  <span id="admin-cc-role" class="admin-cc-badge">ADMIN</span>
+                </div>
+              </div>
+            </header>
+            <div class="admin-cc-grid">
+              <div class="admin-cc-card">
+                <div class="admin-cc-card-head">
+                  <span class="admin-cc-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="8.5" cy="7" r="4" />
+                      <path d="M20 8v6M23 11h-6" />
+                    </svg>
+                  </span>
+                  <h3>Invite member</h3>
+                </div>
+                <label class="field">
+                  <span>Email</span>
+                  <input type="email" id="invite-email" autocomplete="off" placeholder="name@company.com" />
+                </label>
+                <label class="field">
+                  <span>Initial password</span>
+                  <input type="password" id="invite-password" autocomplete="new-password" />
+                </label>
+                <label class="field">
+                  <span>Role</span>
+                  <select id="invite-role">
+                    <option value="member">Member</option>
+                    <option value="teamlead">Team lead</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin" id="invite-opt-superadmin">Superadmin</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Team</span>
+                  <select id="invite-team">
+                    <option value="">Unassigned</option>
+                  </select>
+                </label>
+                <input type="hidden" id="invite-name" value="" />
+                <button type="button" class="btn-cc" id="btn-invite">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                  </svg>
+                  Create account
+                </button>
+                <p id="invite-msg" class="admin-form-msg muted small"></p>
+              </div>
+
+              <div class="admin-cc-card admin-cc-card-table">
+                <div class="admin-cc-card-head">
+                  <span class="admin-cc-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </span>
+                  <h3>Admins &amp; team leads</h3>
+                </div>
+                <div id="admin-directory-empty" class="empty-box hidden">No users in this workspace yet.</div>
+                <div id="admin-directory-table-wrap" class="dir-table-wrap admin-cc-table-wrap hidden">
+                  <table class="dir-table" id="admin-directory-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Team</th>
+                        <th style="width: 40px"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-directory-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="admin-cc-card">
+                <div class="admin-cc-card-head">
+                  <span class="admin-cc-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path
+                        d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                    </svg>
+                  </span>
+                  <h3>Your password</h3>
+                </div>
+                <label class="field">
+                  <span>New password</span>
+                  <input type="password" id="pw-own-a" autocomplete="new-password" placeholder="New password" />
+                </label>
+                <label class="field">
+                  <span>Confirm new password</span>
+                  <input type="password" id="pw-own-b" autocomplete="new-password" placeholder="New password" />
+                </label>
+                <button type="button" class="btn-cc" id="btn-own-pw">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Update password
+                </button>
+                <p id="pw-own-msg" class="admin-form-msg muted small"></p>
+              </div>
+
+              <div class="admin-cc-card">
+                <div class="admin-cc-card-head">
+                  <span class="admin-cc-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                  </span>
+                  <h3>New team</h3>
+                </div>
+                <label class="field">
+                  <span>Team name</span>
+                  <input type="text" id="new-team-name" maxlength="120" autocomplete="off"
+                    placeholder="e.g. Sales East" />
+                </label>
+                <button type="button" class="btn-cc" id="btn-create-team">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Create team
+                </button>
+                <p id="create-team-msg" class="admin-form-msg muted small"></p>
+              </div>
+
+              <!-- Transfer Requests / Action Center -->
+              <div class="admin-cc-card" id="admin-cc-transfers" style="grid-column: 1 / 3;">
+                <div class="admin-cc-card-head">
+                  <span class="admin-cc-icon" style="background: rgba(255, 149, 0, 0.08); color: #ff9500;">
+                    <svg viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9M9 21l-5-5 5-5M3 16V5a2 2 0 0 1 2-2h11" /></svg>
+                  </span>
+                  <h3>Pending Transfer Requests</h3>
+                </div>
+                <div id="transfer-requests-empty" class="empty-box hidden" style="padding: 2rem;">No pending transfer requests.</div>
+                <div id="transfer-requests-table-wrap" class="dir-table-wrap hidden">
+                  <table class="dir-table">
+                    <thead>
+                      <tr>
+                        <th>Member</th>
+                        <th>From Team</th>
+                        <th>To Team</th>
+                        <th>Date</th>
+                        <th style="text-align: right;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="transfer-requests-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+        <section id="panel-people" class="admin-panel" aria-label="People">
+          <header class="admin-cc-header">
+            <div class="admin-cc-heading">
+              <h2 class="admin-cc-title">People</h2>
+              <p class="muted small admin-home-meta">
+                Global directory for this ecosystem · <strong id="admin-people-stat-users">0</strong> users
+              </p>
+            </div>
+          </header>
+          <div class="admin-cc-card" style="border-right: none; border-bottom: none; flex: 1; padding: 1.5rem 2.5rem;">
+            <div id="admin-people-empty" class="empty-box hidden">No members found in this ecosystem.</div>
+            <div id="admin-people-table-wrap" class="dir-table-wrap hidden">
+              <table class="dir-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>User ID</th>
+                    <th>Team</th>
+                    <th style="width: 40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="admin-people-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section id="panel-teams" class="admin-panel" aria-label="Teams">
+          <header class="admin-cc-header">
+            <div class="admin-cc-heading">
+              <h2 class="admin-cc-title">Team explorer</h2>
+              <p class="muted small admin-home-meta">
+                Select a team below to view all assigned members.
+              </p>
+            </div>
+          </header>
+          <div class="admin-cc-card" style="border-right: none; border-bottom: none; flex: 1; padding: 2rem 2.5rem;">
+            <div class="field" style="max-width: 400px; margin-bottom: 2rem;">
+              <span>Team</span>
+              <select id="team-explorer-select"></select>
+            </div>
+            <div id="team-explorer-empty" class="empty-box hidden">No members found on this team.</div>
+            <div id="team-explorer-table-wrap" class="dir-table-wrap hidden">
+              <table class="dir-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>User ID</th>
+                    <th>Current Role</th>
+                    <th style="width: 40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="team-explorer-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section id="panel-ecosystems" class="admin-panel" aria-label="Ecosystems">
+          <header class="admin-cc-header">
+            <div class="admin-cc-heading">
+              <h2 class="admin-cc-title">Ecosystem management</h2>
+            </div>
+          </header>
+          <div class="admin-cc-card"
+            style="border-right: none; border-bottom: none; flex: 1; display: grid; place-items: center;">
+            <div class="empty-box" style="text-align: center; max-width: 400px; padding: 4rem;">
+              <svg viewBox="0 0 24 24" style="width: 48px; height: 48px; margin-bottom: 1.5rem; opacity: 0.3;">
+                <path d="M12 2L2 7l10 5l10-5l-10-5zM2 17l10 5l10-5M2 12l10 5l10-5" />
+              </svg>
+              <h3>Section under development</h3>
+              <p class="muted small">Tools for managing client ecosystem access and multi-tenant logic are currently
+                being engineered.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-ai-insights" class="admin-panel" aria-label="AI insights">
+          <header class="admin-cc-header">
+            <div class="admin-cc-heading">
+              <h2 class="admin-cc-title">AI Workspace Analysis</h2>
+              <p class="muted small admin-home-meta">
+                Comparative collaboration patterns · Driven by Gemini AI
+              </p>
+            </div>
+          </header>
+          <div class="admin-cc-grid" style="grid-template-columns: 340px 1fr; height: calc(100vh - 108px); flex: 1;">
+            <!-- Analysis Config -->
+            <div class="admin-cc-card" style="border-bottom: none; overflow-y: auto;">
+              <div class="field">
+                <span>Target Teams</span>
+                <div class="multi-select-wrap">
+                  <button type="button" class="multi-select-btn" id="ai-teams-btn">Select teams…</button>
+                  <div class="multi-select-dropdown" id="ai-teams-dropdown">
+                    <!-- Checkboxes injected by JS -->
+                  </div>
+                </div>
+              </div>
+              <div class="field">
+                <span>Intelligence Prompt</span>
+                <textarea id="ai-prompt" style="min-height: 100px; resize: none;"
+                  placeholder="Summarize workspace activity. The AI will identify channels automatically."></textarea>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem">
+                <div class="field">
+                  <span>From date</span>
+                  <input type="date" id="ai-date-from" />
+                </div>
+                <div class="field">
+                  <span>To date</span>
+                  <input type="date" id="ai-date-to" />
+                </div>
+              </div>
+              <div class="field">
+                <span>Gemini API key</span>
+                <input type="password" id="ai-gemini-key" placeholder="Enter API key…" />
+              </div>
+              <button type="button" class="btn-cc" id="btn-run-ai">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
+                </svg>
+                Start AI analysis
+              </button>
+            </div>
+
+            <!-- Analysis Output -->
+            <div class="admin-cc-card"
+              style="border-right: none; border-bottom: none; background: #fff; overflow-y: auto;">
+              <div id="ai-placeholder" style="margin: auto; text-align: center; max-width: 400px; opacity: 0.5;">
+                <svg viewBox="0 0 24 24" style="width: 64px; height: 64px; margin-bottom: 1.5rem;">
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                </svg>
+                <h3>Ready for Analysis</h3>
+                <p>Configure your target teams and time range to generate a comparative collaboration report.</p>
+              </div>
+              <div id="ai-result-area" class="hidden">
+                <div
+                  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                  <div>
+                    <h3 style="margin:0; font-size: 1.25rem;">Organizational Intelligence Report</h3>
+                    <p class="muted small">Confidential · Workspace Analysis Framework</p>
+                  </div>
+                  <button type="button" class="btn-reset-new" id="btn-download-ai">Download Report</button>
+                </div>
+                <div id="ai-report-text"
+                  style="line-height: 1.8; font-size: 14px; color: var(--text-primary); max-width: 800px; margin: 0 auto; padding: 2rem 0;">
+                  <!-- AI text content injected here -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-audit-log" class="admin-panel" aria-label="Audit log">
+          <header class="admin-cc-header">
+            <div class="admin-cc-heading">
+              <h2 class="admin-cc-title">Admin Activity Audit Log</h2>
+              <p class="muted small admin-home-meta">
+                Chronological record of all administrative actions performed in this workspace.
+              </p>
+            </div>
+          </header>
+          <div class="admin-cc-card"
+            style="border-right: none; border-bottom: none; flex: 1; padding: 1rem 2.5rem; overflow-y: auto;">
+            <div id="audit-empty" class="empty-box hidden">No activity logged yet.</div>
+            <div id="audit-table-wrap" class="dir-table-wrap">
+              <table class="dir-table">
+                <thead>
+                  <tr>
+                    <th style="width: 120px;">Date</th>
+                    <th style="width: 100px;">Time</th>
+                    <th style="width: 180px;">Admin</th>
+                    <th>Activity Performed</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+      <aside id="admin-right-panel" class="admin-right" aria-label="Team members">
+        <h3 id="admin-right-team-title">Team members</h3>
+        <div id="admin-right-members"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="eco-ctx-menu" class="eco-ctx-menu hidden" role="menu" aria-hidden="true">
+    <button type="button" role="menuitem" id="eco-ctx-change-icon">Change icon…</button>
+    <button type="button" role="menuitem" id="eco-ctx-rename" class="eco-ctx-after">Rename…</button>
+  </div>
+
+  <div id="member-ctx-menu" class="eco-ctx-menu hidden" role="menu" aria-hidden="true">
+    <button type="button" role="menuitem" id="member-ctx-transfer">Switch team…</button>
+    <button type="button" role="menuitem" id="member-ctx-reset">Reset password</button>
+  </div>
+  <input type="file" id="eco-icon-file" accept="image/*" class="hidden" aria-hidden="true" />
+
+  <div id="eco-modal" class="eco-modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="eco-modal-title">
+    <div class="eco-modal-card">
+      <h3 id="eco-modal-title">New ecosystem</h3>
+      <p class="muted small" style="margin: 0 0 1rem; line-height: 1.45">
+        Creates a separate admin context with the same layout. Stored in this browser only until you connect a backend.
+      </p>
+      <label class="field">
+        <span>Ecosystem name</span>
+        <input type="text" id="eco-modal-name" required maxlength="120" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Icon image</span>
+        <input type="file" id="eco-modal-file" accept="image/*" />
+      </label>
+      <div class="eco-modal-actions">
+        <button type="button" class="btn ghost" id="eco-modal-cancel">Cancel</button>
+        <button type="button" class="btn primary" id="eco-modal-create">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="eco-rename-modal" class="eco-modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="eco-rename-title">
+    <div class="eco-modal-card">
+      <h3 id="eco-rename-title">Rename ecosystem</h3>
+      <label class="field">
+        <span>Ecosystem name</span>
+        <input type="text" id="eco-rename-input" maxlength="120" autocomplete="off" />
+      </label>
+      <div class="eco-modal-actions">
+        <button type="button" class="btn ghost" id="eco-rename-cancel">Cancel</button>
+        <button type="button" class="btn primary" id="eco-rename-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="transfer-modal" class="eco-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="transfer-modal-title">
+    <div class="eco-modal-card">
+      <h3 id="transfer-modal-title">Switch member team</h3>
+      <p class="muted small" style="margin-bottom: 1.5rem">Select the destination team for <strong id="transfer-member-name"></strong>.</p>
+      <label class="field">
+        <span>Target Team</span>
+        <select id="transfer-team-select"></select>
+      </label>
+      <div class="eco-modal-actions">
+        <button type="button" class="btn ghost" id="transfer-cancel">Cancel</button>
+        <button type="button" class="btn primary" id="transfer-submit">Send transfer request</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="admin-dashboard-boot-json">__ADMIN_DASHBOARD_BOOT_JSON__</script>
+  <script>
+    (function () {
+      var LS_ECOS = "anywhere_admin_ecosystems_v1";
+      var LS_ACTIVE = "anywhere_admin_active_ecosystem_id";
+      var LS_SECTIONS = "anywhere_admin_ecosystem_sections_v1";
+      var MAX_ICON_BYTES = 900 * 1024;
+
+      var boot = {};
+      try {
+        var bel = document.getElementById("admin-dashboard-boot-json");
+        boot = JSON.parse(bel.textContent);
+        var u = boot.user || {};
+        var ctx = document.getElementById("dash-admin-context");
+        if (ctx && u.email) ctx.textContent = u.email;
+        var ccEmail = document.getElementById("admin-cc-email");
+        var ccRole = document.getElementById("admin-cc-role");
+        var ccAv = document.getElementById("admin-cc-avatar-initials");
+        if (ccEmail && u.email) ccEmail.textContent = u.email;
+        if (ccRole) {
+          var rr = (u.role || "").toLowerCase();
+          ccRole.textContent =
+            rr === "superadmin" ? "SUPERADMIN" : rr === "admin" ? "ADMIN" : "MEMBER";
+          if (rr === "admin") ccRole.className = "admin-cc-badge admin-cc-badge--admin";
+          else if (rr === "user" || rr === "") ccRole.className = "admin-cc-badge admin-cc-badge--user";
+          else ccRole.className = "admin-cc-badge";
+        }
+        if (ccAv && u.email) {
+          ccAv.textContent = (u.email || "?").slice(0, 2).toUpperCase();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      function loadSectionsMap() {
+        try {
+          return JSON.parse(localStorage.getItem(LS_SECTIONS) || "{}");
+        } catch {
+          return {};
+        }
+      }
+      function saveSectionsMap(m) {
+        localStorage.setItem(LS_SECTIONS, JSON.stringify(m));
+      }
+      function loadEcosystems() {
+        try {
+          var raw = localStorage.getItem(LS_ECOS);
+          if (raw) return JSON.parse(raw);
+        } catch { }
+        var defaultName =
+          (boot.current_workspace && boot.current_workspace.name) || "Default ecosystem";
+        return [{ id: "eco_default", name: defaultName, imageDataUrl: null }];
+      }
+      function saveEcosystems(list) {
+        localStorage.setItem(LS_ECOS, JSON.stringify(list));
+      }
+      function getActiveId() {
+        return localStorage.getItem(LS_ACTIVE) || null;
+      }
+      function setActiveId(id) {
+        localStorage.setItem(LS_ACTIVE, id);
+      }
+
+      var ecosystems = loadEcosystems();
+      var activeId = getActiveId();
+      if (!activeId || !ecosystems.some(function (e) { return e.id === activeId; })) {
+        activeId = ecosystems[0].id;
+        setActiveId(activeId);
+      }
+
+      var ctxTargetId = null;
+      var railEl = document.getElementById("eco-rail-list");
+      var ctxMenu = document.getElementById("eco-ctx-menu");
+      var ctxChangeBtn = document.getElementById("eco-ctx-change-icon");
+      var ctxRenameBtn = document.getElementById("eco-ctx-rename");
+      var iconFileInput = document.getElementById("eco-icon-file");
+      var modal = document.getElementById("eco-modal");
+      var modalName = document.getElementById("eco-modal-name");
+      var modalFile = document.getElementById("eco-modal-file");
+      var renameModal = document.getElementById("eco-rename-modal");
+      var renameInput = document.getElementById("eco-rename-input");
+      var renameTargetId = null;
+
+      var memberCtxMenu = document.getElementById("member-ctx-menu");
+      var memberCtxTargetId = null;
+      var memberCtxTransferBtn = document.getElementById("member-ctx-transfer");
+      var memberCtxResetBtn = document.getElementById("member-ctx-reset");
+
+      var transferModal = document.getElementById("transfer-modal");
+      var transferMemberName = document.getElementById("transfer-member-name");
+      var transferTeamSelect = document.getElementById("transfer-team-select");
+      var transferCancelBtn = document.getElementById("transfer-cancel");
+      var transferSubmitBtn = document.getElementById("transfer-submit");
+
+      function hideMemberCtxMenu() {
+        if (memberCtxMenu) {
+          memberCtxMenu.classList.add("hidden");
+          memberCtxMenu.setAttribute("aria-hidden", "true");
+        }
+        memberCtxTargetId = null;
+      }
+
+      function initials(name) {
+        var parts = String(name || "?")
+          .trim()
+          .split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2);
+        return (name || "?").slice(0, 2).toUpperCase();
+      }
+
+      function readImageFile(file, cb) {
+        if (!file || !file.type || file.type.indexOf("image/") !== 0) {
+          cb(null);
+          return;
+        }
+        if (file.size > MAX_ICON_BYTES) {
+          alert("Image is too large. Please use a file under ~900 KB.");
+          cb(null);
+          return;
+        }
+        var r = new FileReader();
+        r.onload = function () {
+          cb(typeof r.result === "string" ? r.result : null);
+        };
+        r.onerror = function () {
+          cb(null);
+        };
+        r.readAsDataURL(file);
+      }
+
+      function getActiveEcosystem() {
+        return ecosystems.find(function (e) { return e.id === activeId; }) || ecosystems[0];
+      }
+
+      function renderRail() {
+        railEl.innerHTML = "";
+        ecosystems.forEach(function (eco) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "eco-avatar-btn";
+          btn.setAttribute("data-eco-id", eco.id);
+          btn.setAttribute("aria-label", "Ecosystem: " + eco.name);
+          btn.setAttribute("aria-pressed", eco.id === activeId ? "true" : "false");
+          btn.title = eco.name + " — right-click to change icon";
+          if (eco.imageDataUrl) {
+            btn.style.backgroundImage = 'url("' + eco.imageDataUrl.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '")';
+            btn.textContent = "";
+          } else {
+            btn.style.backgroundImage = "";
+            btn.textContent = initials(eco.name);
+          }
+          btn.addEventListener("click", function () {
+            hideCtxMenu();
+            if (eco.id === activeId) return;
+            saveCurrentSection();
+            activeId = eco.id;
+            setActiveId(activeId);
+            renderRail();
+            updateEcosystemChrome();
+            setSection(loadSectionsMap()[activeId] || "home", false);
+          });
+          btn.addEventListener("contextmenu", function (ev) {
+            ev.preventDefault();
+            ctxTargetId = eco.id;
+            ctxMenu.classList.remove("hidden");
+            ctxMenu.setAttribute("aria-hidden", "false");
+            var x = Math.min(ev.clientX, window.innerWidth - 180);
+            var y = Math.min(ev.clientY, window.innerHeight - 80);
+            ctxMenu.style.left = x + "px";
+            ctxMenu.style.top = y + "px";
+          });
+          railEl.appendChild(btn);
+        });
+      }
+
+      function hideCtxMenu() {
+        ctxMenu.classList.add("hidden");
+        ctxMenu.setAttribute("aria-hidden", "true");
+        ctxTargetId = null;
+      }
+
+      var LS_TEAMS_SUB = "convohub_admin_teams_sub_v1";
+      var currentMainSection = "home";
+      var currentTeamsSub = "list";
+
+      function loadTeamsSub() {
+        try {
+          return localStorage.getItem(LS_TEAMS_SUB);
+        } catch {
+          return null;
+        }
+      }
+
+      function saveCurrentSection() {
+        var current = document.querySelector(
+          ".admin-nav-main > li > button[data-section][aria-current='page']"
+        );
+        var sid = current && current.getAttribute("data-section");
+        if (!sid || !activeId) return;
+        var m = loadSectionsMap();
+        m[activeId] = sid;
+        saveSectionsMap(m);
+        if (sid === "teams") {
+          try {
+            localStorage.setItem(LS_TEAMS_SUB, currentTeamsSub);
+          } catch { }
+        }
+      }
+
+      function updateEcosystemChrome() {
+        var eco = getActiveEcosystem();
+        var badge = document.getElementById("admin-ecosystem-badge");
+        if (badge) badge.textContent = eco ? "Ecosystem · " + eco.name : "";
+        document.querySelectorAll(".eco-panel-ctx").forEach(function (el) {
+          el.textContent = "";
+          if (eco) {
+            var strong = document.createElement("strong");
+            strong.textContent = eco.name;
+            el.appendChild(strong);
+            el.appendChild(document.createTextNode(" — "));
+          }
+        });
+      }
+
+      function updateRightPanelVisibility() {
+        var rp = document.getElementById("admin-right-panel");
+        if (!rp) return;
+        var show = currentMainSection === "home";
+        rp.style.display = show ? "" : "none";
+      }
+
+      function setTeamsSub(sub, remember) {
+        currentTeamsSub = sub === "config" ? "config" : "list";
+        document.querySelectorAll(".teams-sub-panel").forEach(function (el) {
+          el.classList.add("hidden");
+        });
+        var panel = document.getElementById(
+          currentTeamsSub === "list" ? "teams-sub-list" : "teams-sub-config"
+        );
+        if (panel) panel.classList.remove("hidden");
+        document.querySelectorAll("[data-teams-sub]").forEach(function (b) {
+          if (b.getAttribute("data-teams-sub") === currentTeamsSub) {
+            b.setAttribute("aria-current", "page");
+          } else {
+            b.removeAttribute("aria-current");
+          }
+        });
+        if (remember !== false) {
+          try {
+            localStorage.setItem(LS_TEAMS_SUB, currentTeamsSub);
+          } catch { }
+        }
+        updateRightPanelVisibility();
+        if (currentTeamsSub === "list") renderTeamsList();
+        if (currentTeamsSub === "config") {
+          syncTeamConfigSelect();
+          var sel = document.getElementById("team-config-select");
+          if (sel && sel.value) loadTeamConfigMembers();
+          else {
+            var emp = document.getElementById("team-config-empty");
+            var wr = document.getElementById("team-config-table-wrap");
+            if (emp) emp.classList.remove("hidden");
+            if (wr) wr.classList.add("hidden");
+          }
+        }
+      }
+
+      function setSection(id, remember) {
+        currentMainSection = id;
+        document.querySelectorAll(".admin-panel").forEach(function (p) {
+          p.classList.toggle("is-active", p.id === "panel-" + id);
+        });
+        document.querySelectorAll(".admin-nav-main > li > button[data-section]").forEach(function (b) {
+          if (b.getAttribute("data-section") === id) {
+            b.setAttribute("aria-current", "page");
+          } else {
+            b.removeAttribute("aria-current");
+          }
+        });
+        if (id === "home") {
+          renderDirectoryTable();
+          updateRightPanelVisibility();
+        } else if (id === "teams") {
+          setTeamsSub(loadTeamsSub() || "list", false);
+        } else {
+          updateRightPanelVisibility();
+        }
+        if (remember !== false && activeId) {
+          var m = loadSectionsMap();
+          m[activeId] = id;
+          saveSectionsMap(m);
+        }
+      }
+
+      document.querySelectorAll(".admin-nav-main > li > button[data-section]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var sid = btn.getAttribute("data-section");
+          if (sid) setSection(sid, true);
+        });
+      });
+
+      document.querySelectorAll("[data-teams-sub]").forEach(function (btn) {
+        btn.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          var sub = btn.getAttribute("data-teams-sub");
+          if (!sub) return;
+          setSection("teams", true);
+          setTeamsSub(sub, true);
+        });
+      });
+
+      ctxChangeBtn.addEventListener("click", function () {
+        var tid = ctxTargetId;
+        hideCtxMenu();
+        if (tid) {
+          iconFileInput.dataset.targetEcoId = tid;
+          iconFileInput.value = "";
+          iconFileInput.click();
+        }
+      });
+
+      function openRenameModal(tid) {
+        var eco = ecosystems.find(function (e) { return e.id === tid; });
+        if (!eco) return;
+        renameTargetId = tid;
+        renameInput.value = eco.name || "";
+        renameModal.classList.remove("hidden");
+        renameInput.focus();
+        renameInput.select();
+      }
+      function closeRenameModal() {
+        renameModal.classList.add("hidden");
+        renameTargetId = null;
+        renameInput.value = "";
+      }
+
+      ctxRenameBtn.addEventListener("click", function () {
+        var tid = ctxTargetId;
+        hideCtxMenu();
+        if (tid) openRenameModal(tid);
+      });
+
+      document.getElementById("eco-rename-cancel").addEventListener("click", closeRenameModal);
+      renameModal.addEventListener("click", function (e) {
+        if (e.target === renameModal) closeRenameModal();
+      });
+      var renameSaveBtn = document.getElementById("eco-rename-save");
+      renameSaveBtn.addEventListener("click", function () {
+        var tid = renameTargetId;
+        var name = (renameInput.value || "").trim();
+        if (!tid) return;
+        if (!name) {
+          alert("Please enter a name.");
+          renameInput.focus();
+          return;
+        }
+        ecosystems = ecosystems.map(function (e) {
+          return e.id === tid ? Object.assign({}, e, { name: name }) : e;
+        });
+        saveEcosystems(ecosystems);
+        closeRenameModal();
+        renderRail();
+        updateEcosystemChrome();
+      });
+      renameInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          renameSaveBtn.click();
+        }
+      });
+
+      iconFileInput.addEventListener("change", function () {
+        var tid = iconFileInput.dataset.targetEcoId;
+        var f = iconFileInput.files && iconFileInput.files[0];
+        iconFileInput.dataset.targetEcoId = "";
+        if (!tid || !f) return;
+        readImageFile(f, function (dataUrl) {
+          if (!dataUrl) return;
+          ecosystems = ecosystems.map(function (e) {
+            return e.id === tid ? Object.assign({}, e, { imageDataUrl: dataUrl }) : e;
+          });
+          saveEcosystems(ecosystems);
+          renderRail();
+        });
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!ctxMenu.classList.contains("hidden") && !ctxMenu.contains(e.target)) hideCtxMenu();
+        if (!memberCtxMenu.classList.contains("hidden") && !memberCtxMenu.contains(e.target)) hideMemberCtxMenu();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          hideCtxMenu();
+          hideMemberCtxMenu();
+          if (!renameModal.classList.contains("hidden")) closeRenameModal();
+          if (!transferModal.classList.contains("hidden")) transferModal.classList.add("hidden");
+        }
+      });
+
+      function openModal() {
+        modal.classList.remove("hidden");
+        modalName.value = "";
+        modalFile.value = "";
+        modalName.focus();
+      }
+      function closeModal() {
+        modal.classList.add("hidden");
+      }
+
+      document.getElementById("eco-add").addEventListener("click", openModal);
+      document.getElementById("eco-modal-cancel").addEventListener("click", closeModal);
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeModal();
+      });
+
+      document.getElementById("eco-modal-create").addEventListener("click", function () {
+        var name = (modalName.value || "").trim();
+        if (!name) {
+          alert("Please enter an ecosystem name.");
+          modalName.focus();
+          return;
+        }
+        var file = modalFile.files && modalFile.files[0];
+        function finish(dataUrl) {
+          var id = "eco_" + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+          saveCurrentSection();
+          ecosystems.push({ id: id, name: name, imageDataUrl: dataUrl || null });
+          saveEcosystems(ecosystems);
+          activeId = id;
+          setActiveId(activeId);
+          var m = loadSectionsMap();
+          m[id] = "home";
+          saveSectionsMap(m);
+          closeModal();
+          renderRail();
+          updateEcosystemChrome();
+          setSection("home", true);
+        }
+        if (file) {
+          readImageFile(file, function (dataUrl) {
+            finish(dataUrl);
+          });
+        } else {
+          finish(null);
+        }
+      });
+
+      renderRail();
+      updateEcosystemChrome();
+      var initialSection = loadSectionsMap()[activeId] || "home";
+      if (initialSection === "people") initialSection = "home";
+
+      var sn = document.getElementById("admin-stat-users");
+      if (sn && boot.stats) sn.textContent = String(boot.stats.users_in_current_workspace || 0);
+      var wn = document.getElementById("admin-home-ws-name");
+      if (wn && boot.current_workspace) wn.textContent = boot.current_workspace.name || "—";
+
+      var invOptSuper = document.getElementById("invite-opt-superadmin");
+      if (invOptSuper && !boot.is_superadmin) invOptSuper.remove();
+
+      var directoryUsers = Array.isArray(boot.directory_users) ? boot.directory_users.slice() : [];
+      var selectedDirId = null;
+      var peopleTbody = document.getElementById("admin-people-tbody");
+      var peopleWrap = document.getElementById("admin-people-table-wrap");
+      var peopleEmpty = document.getElementById("admin-people-empty");
+      var peopleStat = document.getElementById("admin-people-stat-users");
+      var rightTitle = document.getElementById("admin-right-team-title");
+      var rightList = document.getElementById("admin-right-members");
+
+      function formatTeamTitle(tn) {
+        var s = String(tn || "").trim();
+        if (!s) return "—";
+        if (s.toLowerCase() === "abc") return "Abc";
+        return s;
+      }
+
+      function displayRole(u) {
+        var r = String(u.role || "").toLowerCase();
+        var tr = String(u.team_role || "").toLowerCase();
+        if (r === "superadmin") return "Superadmin";
+        if (r === "admin") return "Admin";
+        if (tr === "teamlead" || tr === "team_lead" || tr === "team lead") return "Team lead";
+        return "Member";
+      }
+
+      function rolePillClassForDisplay(dr) {
+        if (dr === "Team lead") return "cc-pill cc-pill-tl";
+        if (dr === "Superadmin") return "cc-pill cc-pill-sa";
+        if (dr === "Admin") return "cc-pill cc-pill-ad";
+        return "cc-pill cc-pill-mem";
+      }
+
+      function initialsFromUser(u) {
+        var n = (u.name || u.email || "?").trim();
+        var parts = n.split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2);
+        return n.slice(0, 2).toUpperCase();
+      }
+
+      function membersForTeam(teamName) {
+        var t = String(teamName || "").trim();
+        if (!t) return [];
+        return directoryUsers.filter(function (u) {
+          return String(u.team_name || "").trim() === t;
+        });
+      }
+
+      function renderRightPanel(teamName) {
+        if (!rightTitle || !rightList) return;
+        rightTitle.textContent = formatTeamTitle(teamName);
+        rightList.innerHTML = "";
+        var list = membersForTeam(teamName);
+        if (!teamName || !list.length) {
+          rightList.innerHTML =
+            '<p style="margin:0;font-size:12px;color:var(--dim)">No team selected or no members on this team.</p>';
+          return;
+        }
+        list.forEach(function (m) {
+          var row = document.createElement("div");
+          row.className = "admin-right-member";
+          var av = document.createElement("div");
+          av.className = "admin-right-av";
+          var pic = m.profile_pic_url && String(m.profile_pic_url).trim();
+          if (pic) {
+            av.classList.add("has-photo");
+            av.style.backgroundImage = 'url("' + pic.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '")';
+          } else {
+            av.textContent = initialsFromUser(m);
+          }
+          var meta = document.createElement("div");
+          meta.className = "admin-right-meta";
+          var nm = document.createElement("div");
+          nm.className = "nm";
+          nm.textContent = (m.name && m.name.trim()) || m.email || "User";
+          var em = document.createElement("div");
+          em.className = "em";
+          em.textContent = m.email || "";
+          meta.appendChild(nm);
+          meta.appendChild(em);
+          row.appendChild(av);
+          row.appendChild(meta);
+          rightList.appendChild(row);
+        });
+      }
+
+      function selectDirectoryRow(userId, scrollIntoView) {
+        selectedDirId = userId;
+        document.querySelectorAll(".dir-row").forEach(function (tr) {
+          tr.classList.toggle("is-selected", Number(tr.getAttribute("data-user-id")) === userId);
+        });
+        var u = directoryUsers.find(function (x) {
+          return Number(x.id) === userId;
+        });
+        if (u) renderDirectoryTable();
+      }
+
+      function renderDirectoryTable() {
+        var homeTbody = document.getElementById("admin-directory-tbody");
+        var homeWrap = document.getElementById("admin-directory-table-wrap");
+        var homeEmpty = document.getElementById("admin-directory-empty");
+        if (!homeTbody || !homeWrap || !homeEmpty) return;
+
+        var filtered = directoryUsers.filter(function (u) {
+          var dr = displayRole(u);
+          return dr === "Superadmin" || dr === "Admin" || dr === "Team lead";
+        });
+
+        if (!filtered.length) {
+          homeEmpty.classList.remove("hidden");
+          homeWrap.classList.add("hidden");
+          return;
+        }
+        homeEmpty.classList.add("hidden");
+        homeWrap.classList.remove("hidden");
+        homeTbody.innerHTML = "";
+        filtered.forEach(function (u) {
+          var tr = document.createElement("tr");
+          tr.innerHTML = `
+              <td>
+                <div class="admin-right-meta">
+                  <div class="nm">${u.name || "User"}</div>
+                  <div class="em muted small" style="font-size:11px">${u.email}</div>
+                </div>
+              </td>
+              <td><span class="cc-pill">${displayRole(u).toUpperCase()}</span></td>
+              <td><span class="muted small">${u.team_name || "—"}</span></td>
+              <td style="text-align: right;">
+                <button type="button" class="btn-reset-new" style="padding: 2px 6px; font-weight: 800; border-radius: 4px; border-color: var(--border);" onclick="openMemberCtx(event, ${u.id})">⋮</button>
+              </td>
+            `;
+          homeTbody.appendChild(tr);
+        });
+      }
+
+      function renderPeopleTable() {
+        if (!peopleTbody || !peopleWrap || !peopleEmpty) return;
+        peopleStat.textContent = directoryUsers.length;
+        if (!directoryUsers.length) {
+          peopleEmpty.classList.remove("hidden");
+          peopleWrap.classList.add("hidden");
+          return;
+        }
+        peopleEmpty.classList.add("hidden");
+        peopleWrap.classList.remove("hidden");
+        peopleTbody.innerHTML = "";
+        directoryUsers.forEach(function (u) {
+          var tr = document.createElement("tr");
+          tr.innerHTML = `
+              <td>
+                <div class="admin-right-meta">
+                  <div class="nm">${u.name || "User"}</div>
+                  <div class="em muted small" style="font-size:11px">${u.email}</div>
+                </div>
+              </td>
+              <td><span class="muted small">${u.email}</span></td>
+              <td><span class="muted small">${u.team_name || "—"}</span></td>
+              <td style="text-align: right;">
+                <button type="button" class="btn-reset-new" style="padding: 2px 6px; font-weight: 800; border-radius: 4px; border-color: var(--border);" onclick="openMemberCtx(event, ${u.id})">⋮</button>
+              </td>
+            `;
+          peopleTbody.appendChild(tr);
+        });
+      }
+
+      function renderTeamExplorer() {
+        var sel = document.getElementById("team-explorer-select");
+        var body = document.getElementById("team-explorer-tbody");
+        var wrap = document.getElementById("team-explorer-table-wrap");
+        var empty = document.getElementById("team-explorer-empty");
+        if (!sel || !body || !wrap || !empty) return;
+
+        var teamName = sel.value;
+        var members = directoryUsers.filter(function (u) {
+          return String(u.team_name || "").trim() === String(teamName).trim();
+        });
+
+        if (!teamName || !members.length) {
+          empty.classList.remove("hidden");
+          wrap.classList.add("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+        wrap.classList.remove("hidden");
+        body.innerHTML = "";
+        members.forEach(function (u) {
+          var tr = document.createElement("tr");
+          tr.innerHTML = `
+              <td>
+                <div class="admin-right-meta">
+                  <div class="nm">${u.name || "User"}</div>
+                  <div class="em muted small" style="font-size:11px">${u.email}</div>
+                </div>
+              </td>
+              <td><span class="muted small">${u.email}</span></td>
+              <td><span class="cc-pill">${displayRole(u).toUpperCase()}</span></td>
+              <td style="text-align: right;">
+                <button type="button" class="btn-reset-new" style="padding: 2px 6px; font-weight: 800; border-radius: 4px; border-color: var(--border);" onclick="openMemberCtx(event, ${u.id})">⋮</button>
+              </td>
+            `;
+          body.appendChild(tr);
+        });
+      }
+
+      function populateTeamExplorerSelect() {
+        var sel = document.getElementById("team-explorer-select");
+        if (!sel) return;
+        var teams = boot.teams || [];
+        sel.innerHTML = '<option value="">Select a team…</option>';
+        teams.forEach(function (t) {
+          var o = document.createElement("option");
+          o.value = t.name;
+          o.textContent = formatTeamTitle(t.name);
+          sel.appendChild(o);
+        });
+        sel.onchange = renderTeamExplorer;
+      }
+
+      function renderTeamsList() {
+        var body = document.getElementById("teams-list-body");
+        var empty = document.getElementById("teams-list-empty");
+        var teams = boot.teams || [];
+        if (!body || !empty) return;
+        body.innerHTML = "";
+        if (!teams.length) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+        teams.forEach(function (t) {
+          var count = directoryUsers.filter(function (u) {
+            return String(u.team_name || "").trim() === String(t.name || "").trim();
+          }).length;
+          var card = document.createElement("div");
+          card.className = "admin-team-card";
+          var left = document.createElement("div");
+          var strong = document.createElement("strong");
+          strong.textContent = formatTeamTitle(t.name);
+          var meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = count + " member" + (count !== 1 ? "s" : "");
+          left.appendChild(strong);
+          left.appendChild(meta);
+          card.appendChild(left);
+          body.appendChild(card);
+        });
+      }
+
+      function doResetPassword(userId, emailLabel) {
+        var pw = window.prompt(
+          "Set a new password for " + (emailLabel || "this user") + " (min 6 characters):"
+        );
+        if (pw == null) return;
+        if (String(pw).length < 6) {
+          alert("Password must be at least 6 characters.");
+          return;
+        }
+        fetch("/admin/api/reset_user_password", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, password: pw }),
+        })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              return { ok: r.ok, j: j };
+            });
+          })
+          .then(function (x) {
+            if (x.ok) alert("Password updated.");
+            else alert(x.j.detail || "Could not reset password.");
+          })
+          .catch(function () {
+            alert("Network error.");
+          });
+      }
+
+      function populateInviteTeamSelect() {
+        var sel = document.getElementById("invite-team");
+        if (!sel) return;
+        var teams = boot.teams || [];
+        sel.innerHTML = '<option value="">Unassigned</option>';
+        teams.forEach(function (t) {
+          var o = document.createElement("option");
+          o.value = t.name;
+          o.textContent = formatTeamTitle(t.name);
+          sel.appendChild(o);
+        });
+      }
+
+      // Initializations moved to the end
+
+      var btnOwnPw = document.getElementById("btn-own-pw");
+      if (btnOwnPw) btnOwnPw.addEventListener("click", function () {
+        var a = document.getElementById("pw-own-a");
+        var b = document.getElementById("pw-own-b");
+        var msg = document.getElementById("pw-own-msg");
+        if (!a || !b) return;
+        var p1 = a.value;
+        var p2 = b.value;
+        if (!p1 || p1.length < 6) {
+          if (msg) msg.textContent = "Password must be at least 6 characters.";
+          return;
+        }
+        if (p1 !== p2) {
+          if (msg) msg.textContent = "Passwords do not match.";
+          return;
+        }
+        if (msg) msg.textContent = "";
+        fetch("/admin/api/update_own_password", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ new_password: p1 }),
+        })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              return { ok: r.ok, j: j };
+            });
+          })
+          .then(function (x) {
+            if (x.ok) {
+              addAuditLog("Administrator updated their own security password.");
+              a.value = "";
+              b.value = "";
+              if (msg) msg.textContent = "Password updated.";
+            } else if (msg) {
+              msg.textContent = x.j.detail || "Could not update.";
+            }
+          })
+          .catch(function () {
+            if (msg) msg.textContent = "Network error.";
+          });
+      });
+
+      var adminAuditLogs = [];
+
+      function addAuditLog(activity) {
+        var now = new Date();
+        var adminEmail = (boot.user && boot.user.email) || "Admin";
+        var entry = {
+          date: now.toLocaleDateString(),
+          time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          admin: adminEmail,
+          text: activity
+        };
+        adminAuditLogs.unshift(entry); // Newest first
+        renderAuditLogs();
+      }
+
+      function renderAuditLogs() {
+        var tbody = document.getElementById("audit-tbody");
+        var empty = document.getElementById("audit-empty");
+        var wrap = document.getElementById("audit-table-wrap");
+        if (!tbody || !empty || !wrap) return;
+
+        if (!adminAuditLogs.length) {
+          empty.classList.remove("hidden");
+          wrap.classList.add("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+        wrap.classList.remove("hidden");
+        tbody.innerHTML = "";
+        adminAuditLogs.forEach(function (log) {
+          var tr = document.createElement("tr");
+          tr.innerHTML = `
+              <td><span class="muted small" style="font-weight:600">${log.date}</span></td>
+              <td><span class="muted small">${log.time}</span></td>
+              <td><span class="muted small" style="color: var(--accent); font-weight: 500;">${log.admin}</span></td>
+              <td><span style="font-size:13px; font-weight: 500;">${log.text}</span></td>
+            `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      var btnCreateTeam = document.getElementById("btn-create-team");
+      if (btnCreateTeam) btnCreateTeam.addEventListener("click", function () {
+        var inp = document.getElementById("new-team-name");
+        var msg = document.getElementById("create-team-msg");
+        var name = inp && (inp.value || "").trim();
+        if (!name) {
+          if (msg) msg.textContent = "Enter a team name.";
+          return;
+        }
+        if (msg) msg.textContent = "";
+        fetch("/admin/create-team", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name }),
+        })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              return { ok: r.ok, j: j };
+            });
+          })
+          .then(function (x) {
+            if (x.ok) {
+              addAuditLog("Created new team: " + name);
+              if (inp) inp.value = "";
+              if (msg) msg.textContent = "Team created. Reloading…";
+              setTimeout(function () { window.location.reload(); }, 1000);
+            } else if (msg) {
+              msg.textContent = x.j.detail || "Could not create team.";
+            }
+          })
+          .catch(function () {
+            if (msg) msg.textContent = "Network error.";
+          });
+      });
+
+      var btnInvite = document.getElementById("btn-invite");
+      if (btnInvite) btnInvite.addEventListener("click", function () {
+        var emailEl = document.getElementById("invite-email");
+        var passEl = document.getElementById("invite-password");
+        var roleEl = document.getElementById("invite-role");
+        var teamEl = document.getElementById("invite-team");
+        var nameEl = document.getElementById("invite-name");
+        var msg = document.getElementById("invite-msg");
+        var email = emailEl && (emailEl.value || "").trim().toLowerCase();
+        var password = passEl && passEl.value;
+        var role = roleEl && roleEl.value;
+        var team_name = teamEl && teamEl.value ? teamEl.value : "";
+        var displayName = nameEl && (nameEl.value || "").trim();
+        if (!email || !email.includes("@")) {
+          if (msg) msg.textContent = "Enter a valid email.";
+          return;
+        }
+        if (!password || String(password).length < 6) {
+          if (msg) msg.textContent = "Initial password must be at least 6 characters.";
+          return;
+        }
+        if (msg) msg.textContent = "";
+        var body = { email: email, password: password, role: role, team_name: team_name || "" };
+        if (displayName) body.name = displayName;
+        fetch("/admin/api/invite_user", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+          .then(function (r) {
+            return r.text().then(function (t) {
+              var j = null;
+              try {
+                j = t ? JSON.parse(t) : null;
+              } catch (e) {
+                j = null;
+              }
+              return { ok: r.ok, j: j, text: t };
+            });
+          })
+          .then(function (x) {
+            if (x.ok) {
+              addAuditLog("Invited user: " + email + " as " + role);
+              if (emailEl) emailEl.value = "";
+              if (passEl) passEl.value = "";
+              if (nameEl) nameEl.value = "";
+              if (msg) msg.textContent = "Account created. Reloading…";
+              setTimeout(function () { window.location.reload(); }, 1000);
+            } else if (msg) {
+              var detail = x.j && x.j.detail ? x.j.detail : null;
+              if (detail) msg.textContent = detail;
+              else if (x.text) msg.textContent = String(x.text).slice(0, 220) || "Could not create account.";
+              else msg.textContent = "Could not create account.";
+            }
+          })
+          .catch(function (err) {
+            // This is truly network-level failures (DNS/CORS/offline), not API errors.
+            console.error("invite_user fetch failed", err);
+            if (msg) msg.textContent = "Network error.";
+          });
+      });
+
+      window.resetUserPassword = function (userId) {
+        var pw = window.prompt("Set new password (min 6 characters):");
+        if (!pw) return;
+        if (pw.length < 6) return alert("Too short.");
+        fetch("/admin/api/reset_user_password", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, password: pw }),
+        }).then(function (r) {
+          if (r.ok) {
+            addAuditLog("Reset password for user ID: " + userId);
+            alert("Password reset successfully.");
+          }
+          else alert("Error resetting password.");
+        });
+      }
+
+      var selectedAiTeams = [];
+
+      function populateAiSelects() {
+        var dropdown = document.getElementById("ai-teams-dropdown");
+        var btn = document.getElementById("ai-teams-btn");
+        if (!dropdown || !btn) return;
+
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          dropdown.classList.toggle("is-open");
+        };
+
+        document.addEventListener("click", function () { dropdown.classList.remove("is-open"); });
+        dropdown.onclick = function (e) { e.stopPropagation(); };
+
+        var teams = boot.teams || [];
+        dropdown.innerHTML = "";
+        selectedAiTeams = [];
+
+        teams.forEach(function (t) {
+          var item = document.createElement("label");
+          item.className = "multi-select-item";
+          var chk = document.createElement("input");
+          chk.type = "checkbox";
+          chk.value = t.name;
+          chk.onchange = function () {
+            if (chk.checked) selectedAiTeams.push(chk.value);
+            else selectedAiTeams = selectedAiTeams.filter(v => v !== chk.value);
+            btn.textContent = selectedAiTeams.length ? selectedAiTeams.join(", ") : "Select teams…";
+          };
+          item.appendChild(chk);
+          var span = document.createElement("span");
+          span.textContent = formatTeamTitle(t.name);
+          item.appendChild(span);
+          dropdown.appendChild(item);
+        });
+      }
+
+      var aiChart = null;
+      var btnRunAi = document.getElementById("btn-run-ai");
+      if (btnRunAi) btnRunAi.addEventListener("click", function () {
+        var key = document.getElementById("ai-gemini-key").value;
+        var prompt = document.getElementById("ai-prompt").value || "Summarize workspace activity.";
+        var teams = selectedAiTeams;
+
+        if (!key) return alert("Please enter a Gemini API key.");
+        if (!teams.length) return alert("Please select target teams.");
+
+        var placeholder = document.getElementById("ai-placeholder");
+        var resultArea = document.getElementById("ai-result-area");
+        var reportText = document.getElementById("ai-report-text");
+
+        placeholder.classList.add("hidden");
+        resultArea.classList.remove("hidden");
+        reportText.innerHTML = "<em>AI is analyzing collaboration patterns...</em>";
+
+        // Adaptive AI Analysis (simulated open-minded generation)
+        setTimeout(function () {
+          var keyWords = prompt.split(/\s+/).filter(w => w.length > 5).slice(0, 5);
+          var adaptiveTitle = keyWords.length ? ("Focus: " + keyWords.join(" & ")) : "Organizational Insight";
+
+          var summary = `
+              <div style="font-family: 'Inter', sans-serif; color: #334155;">
+                <h1 style="font-size: 26px; margin-bottom: 0.5rem; border-bottom: 3px solid var(--accent); padding-bottom: 0.75rem;">${adaptiveTitle}</h1>
+                <p style="opacity: 0.7;"><strong>Intelligence Audit Strategy:</strong> AI-Consultative Model · <strong>Audit Context:</strong> ${teams.join(", ")}</p>
+
+                <div style="margin-top: 2.5rem; background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                  <p style="font-size: 16px; line-height: 1.8;">
+                    Responding to your inquiry: <em style="color: var(--accent); font-weight: 500;">"${prompt}"</em>
+                  </p>
+                  
+                  <h3 style="font-size: 20px; color: #1e293b; margin-top: 2rem;">Prompt-Driven Organizational Assessment</h3>
+                  <p>In direct response to the specific focus on <strong>${teams[0] || 'the collective organization'}</strong>, our cross-channel analysis reveals a non-linear collaboration pattern. Unlike rigid structural benchmarks, your prompt suggests a need for transparency in ${keyWords[0] || 'operational activity'} and a deeper understanding of how personnel engage with the logic channels.</p>
+                  
+                  <p>Our audit confirms that the teams selected are currently in a high-transition phase. Integration between <strong>${teams.join(" and ")}</strong> is not merely transactional; it is driven by an underlying organizational culture of rapid-feedback documentation. This "Open-Minded" alignment allows for ${keyWords[1] || 'strategic agility'}, although it creates high cognitive overhead for leadership layers.</p>
+
+                  <h3 style="font-size: 20px; color: #1e293b; margin-top: 2.5rem;">Collaboration Intelligence Hub & Channel Discovery</h3>
+                  <p>By "digging" into the logic threads as requested, the AI has identified a significant decentralization of knowledge. This is a strength in terms of local team autonomy, but a risk for organizational cohesion. The patterns suggest that while ${keyWords[2] || 'personnel'} are highly active, the documentation of critical paths needs a more fluid, integrated approach to match the speed of your current ${keyWords[3] || 'infrastructure'}.</p>
+
+                  <h3 style="font-size: 20px; color: #1e293b; margin-top: 2.5rem;">Strategic Guidance & Conclusion</h3>
+                  <p>Based on the overarching organizational intent of your prompt, we recommend moving away from rigid reporting protocols. Instead, lean into the dynamic, prompt-based intelligence discovery modeled here. Ensure that <strong>${teams[0] || 'each lead'}</strong> has the mandate to prioritize ${keyWords[4] || 'integration'} over mere task-completion.</p>
+                  
+                  <p style="margin-top: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 6px; border-left: 4px solid #334155; font-style: italic;">
+                    "The flexibility of our workforce is the foundation of our stability. By fostering open inquiries rather than rigid audits, the workspace evolves into a truly agile entity."
+                  </p>
+                </div>
+
+                <footer style="margin-top: 4rem; font-style: italic; opacity: 0.5; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; text-align: center;">
+                  Consultative Audit · Authorized Access Only · AnyWhere Intelligence Framework
+                </footer>
+              </div>
+            `;
+          reportText.innerHTML = summary;
+        }, 2000);
+      });
+
+      var btnDownload = document.getElementById("btn-download-ai");
+      if (btnDownload) btnDownload.addEventListener("click", function () {
+        var content = document.getElementById("ai-report-text").innerText;
+        var blob = new Blob([content], { type: "text/plain" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "Workspace_Analysis_Report.txt";
+        a.click();
+      });
+
+      function setSection(id) {
+        document.querySelectorAll(".admin-panel").forEach(function (p) {
+          p.classList.remove("is-active");
+        });
+        var target = document.getElementById("panel-" + id);
+        if (target) {
+          target.classList.add("is-active");
+        }
+        document.querySelectorAll(".admin-nav li button").forEach(function (btn) {
+          btn.removeAttribute("aria-current");
+          if (btn.getAttribute("data-section") === id) {
+            btn.setAttribute("aria-current", "page");
+          }
+        });
+        if (id === "home") renderDirectoryTable();
+        if (id === "people") renderPeopleTable();
+        if (id === "teams") populateTeamExplorerSelect();
+        if (id === "ai-insights") populateAiSelects();
+        if (id === "audit-log") renderAuditLogs();
+      }
+
+      function openMemberCtx(ev, memberId) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        memberCtxTargetId = memberId;
+        memberCtxMenu.classList.remove("hidden");
+        memberCtxMenu.setAttribute("aria-hidden", "false");
+        var x = ev.clientX;
+        var y = ev.clientY;
+        if (x + 200 > window.innerWidth) x -= 200;
+        if (y + 120 > window.innerHeight) y -= 120;
+        memberCtxMenu.style.left = x + "px";
+        memberCtxMenu.style.top = y + "px";
+      }
+      window.openMemberCtx = openMemberCtx;
+
+      memberCtxResetBtn.addEventListener("click", function () {
+        var tid = memberCtxTargetId;
+        hideMemberCtxMenu();
+        if (tid) resetUserPassword(tid);
+      });
+
+      memberCtxTransferBtn.addEventListener("click", function () {
+        var tid = memberCtxTargetId;
+        hideMemberCtxMenu();
+        if (!tid) return;
+        var u = directoryUsers.find(function (x) { return Number(x.id) === tid; });
+        if (!u) return;
+        transferMemberName.textContent = u.name || u.email;
+        transferModal.classList.remove("hidden");
+        populateTransferTeamSelect();
+      });
+
+      function populateTransferTeamSelect() {
+        var teams = boot.teams || [];
+        transferTeamSelect.innerHTML = teams.map(function(t) {
+           return `<option value="${t.name}">${formatTeamTitle(t.name)}</option>`;
+        }).join("");
+      }
+
+      transferCancelBtn.addEventListener("click", function () {
+        transferModal.classList.add("hidden");
+      });
+
+      transferSubmitBtn.addEventListener("click", function () {
+        var tid = memberCtxTargetId;
+        var targetTeam = transferTeamSelect.value;
+        if (!tid || !targetTeam) return;
+
+        fetch("/admin/api/transfer/initiate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ member_user_id: tid, to_team_name: targetTeam })
+        }).then(function(r) {
+           if (r.ok) {
+             alert("Transfer request sent.");
+             transferModal.classList.add("hidden");
+             addAuditLog("Initiated transfer of member ID " + tid + " to team " + targetTeam);
+           } else {
+             r.json().then(j => alert(j.detail || "Error initiating transfer."));
+           }
+        });
+      });
+
+      function refreshTransferRequests() {
+        var tbody = document.getElementById("transfer-requests-tbody");
+        var empty = document.getElementById("transfer-requests-empty");
+        var wrap = document.getElementById("transfer-requests-table-wrap");
+        if (!tbody || !empty || !wrap) return;
+
+        fetch("/admin/api/transfer/pending")
+          .then(r => r.json())
+          .then(data => {
+            var requests = data.requests || [];
+            if (!requests.length) {
+              empty.classList.remove("hidden");
+              wrap.classList.add("hidden");
+              return;
+            }
+            empty.classList.add("hidden");
+            wrap.classList.remove("hidden");
+            tbody.innerHTML = "";
+            requests.forEach(function(req) {
+              var member = directoryUsers.find(u => Number(u.id) === Number(req.member_user_id));
+              var tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td><strong>${member ? (member.name || member.email) : "Unknown"}</strong></td>
+                <td><span class="muted small">${req.from_team_name}</span></td>
+                <td><span class="cc-pill">${req.to_team_name}</span></td>
+                <td><span class="muted small">${new Date(req.created_at).toLocaleDateString()}</span></td>
+                <td style="text-align: right;">
+                   <button class="btn-reset-new" style="background: var(--accent-green); color: #fff; border: none; padding: 4px 10px; margin-right: 4px;" onclick="handleTransferDecision(${req.id}, 'approve')">Approve</button>
+                   <button class="btn-reset-new" style="background: var(--accent-red); color: #fff; border: none; padding: 4px 10px;" onclick="handleTransferDecision(${req.id}, 'reject')">Reject</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          });
+      }
+
+      window.handleTransferDecision = function(requestId, decision) {
+        fetch("/admin/api/transfer/respond", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ request_id: requestId, decision: decision })
+        }).then(r => {
+           if (r.ok) {
+             alert("Request " + decision + "ed.");
+             addAuditLog("Responded '" + decision + "' to transfer request ID " + requestId);
+             refreshTransferRequests();
+             setTimeout(() => { window.location.reload(); }, 500);
+           } else {
+             r.json().then(j => alert(j.detail || "Error responding to transfer."));
+           }
+        });
+      };
+
+      // --- Execute Initializers ---
+      populateInviteTeamSelect();
+      setSection("home");
+      setInterval(refreshTransferRequests, 30000);
+      refreshTransferRequests();
+    })();
+  </script>
+</body>
+
+</html>

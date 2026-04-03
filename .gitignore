@@ -1,0 +1,8 @@
+# Secrets and local overrides — database credentials must not leave this machine
+.env
+.env.local
+.env.*.local
+
+node_modules/
+npm-debug.log*
+.DS_Store

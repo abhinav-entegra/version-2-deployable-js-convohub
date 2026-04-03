@@ -1,0 +1,37 @@
+Legacy unified Flask / SQLAlchemy app → this Node + Supabase project (same behaviour, Postgres).
+
+ENTITY MAP (conceptual)
+- User                    → public.users (email, bcrypt password, role, team_name, team_role, designation, workspace_id, flags)
+- Workspace / Ecosystem   → public.workspaces (hub id=1, private ecosystems, creator_id, allow_group_creation)
+- Team                    → public.teams (name UNIQUE globally, workspace_id, can_deploy_publicly)
+- Channel / Group         → public.channels (workspace_id + name UNIQUE, team_name, visibility, post_permission_mode, is_private_group)
+- Message                 → public.messages (channel_name OR receiver_id DM, workspace_id, encrypted content optional)
+- GroupMembers            → public.group_members (private group membership)
+- ChannelRolePermission   → public.channel_role_permissions
+- DMPermission            → public.dm_permissions
+- Notification            → public.notifications
+- ChannelVisit            → public.channel_visits
+- WorkspaceAccess       → public.workspace_access (multi-ecosystem access)
+- MemberTransferRequest   → public.member_transfer_requests
+- TransferChatBackup      → public.transfer_chat_backups
+- RefreshToken (Node)     → public.refresh_tokens
+
+ROLES (users.role)
+- user          → member workspace client
+- admin         → workspace administrator (admin console + policies)
+- superadmin    → all workspaces (admin console workspace list)
+
+ADMIN CONSOLE (this repo)
+- Browser: GET /admin (cookie JWT) after POST /auth/login/admin
+- API: GET /admin/api/overview, POST /admin/create-team, POST /admin/api/update_workspace,
+       POST /admin/toggle_ecosystem_visibility, POST /admin/toggle_group_creation,
+       POST /admin/update_team_deployment
+
+MEMBER APP
+- Browser: GET /dashboard after POST /auth/login/client (or /auth/login for any role)
+- Full UI: public/dashboard.template.html (ported from legacy client_dashboard)
+
+IMPORTING OLD DATA
+- Export rows from legacy DB into CSV matching column names above, or use pg_dump / INSERT scripts.
+- Passwords must be bcrypt hashes compatible with bcryptjs (same as Flask bcrypt rounds ~10).
+- Map legacy integer IDs if foreign keys must line up; otherwise insert in dependency order and remap FKs.
