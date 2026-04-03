@@ -56,6 +56,7 @@ export function canUserViewChannel(user, channel, explicitMemberIds, userGroupCh
     if (role === "admin" || role === "superadmin") return true;
     const isLead = (user.team_role || "").toLowerCase() === "teamlead";
     if (isLead && (user.team_name || "").trim() === (channel.team_name || "").trim()) return true;
+    if (isLead && channel.team_name === "__EXTERNAL__") return true; // Externals are globally manageable by leads
     return explicit.has(Number(user.id)) || explicit.has(String(user.id));
   }
   if (vis === "custom") {
