@@ -1,0 +1,1 @@
+const store = require('./app/services/sqlite_store.js'); const c = store.db.prepare('SELECT * FROM channels WHERE name = ?').get('ext-convohub-1775204841273'); console.log('CHANNEL:', c); console.log('MEMBERS:', store.db.prepare('SELECT * FROM group_members WHERE group_id = ?').all(c?.id));

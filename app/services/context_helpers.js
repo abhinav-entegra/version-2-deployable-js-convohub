@@ -23,6 +23,12 @@ export async function getChannelBaseRows(user) {
     return rows.filter((c) => {
       // Public channels (visibility="all" and NOT a private group) should be visible to everyone in the workspace
       if (!c.is_private_group && (c.visibility || "all") === "all") return true;
+      
+      const role = (user.role || "").toLowerCase();
+      const isLead = (user.team_role || "").toLowerCase() === "teamlead";
+      const isAdmin = ["admin", "superadmin"].includes(role);
+      if ((isAdmin || isLead) && c.team_name === "__EXTERNAL__") return true;
+      
       // Otherwise, enforce team isolation or explicit membership
       return c.team_name === user.team_name || idList.includes(Number(c.id));
     });

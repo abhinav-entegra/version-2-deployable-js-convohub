@@ -70,18 +70,23 @@
     </style>
     <style>
       .login-page {
-        background: var(--bg-app);
-        background-image: radial-gradient(circle, #d1d1d6 0.7px, transparent 0.7px);
-        background-size: 22px 22px;
+        background-color: var(--bg-app);
+        background-image: radial-gradient(ellipse 100% 80% at 50% -30%, rgba(124, 58, 237, 0.12), transparent 55%),
+          radial-gradient(circle at 0% 100%, rgba(109, 40, 217, 0.07), transparent 45%),
+          radial-gradient(circle, rgba(109, 40, 217, 0.065) 0.65px, transparent 0.65px);
+        background-size: auto, auto, 20px 20px;
       }
       .login-wrap {
         max-width: 540px;
       }
       .login-wrap h1 {
         letter-spacing: -0.3px;
-        color: var(--text-primary);
         font-size: 2.1rem;
         margin-bottom: 0.55rem;
+        background: linear-gradient(135deg, #1c1c1e 0%, #5b21b6 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
       }
       .login-wrap .tagline {
         font-size: 14px;
@@ -89,10 +94,11 @@
       }
       .login-card {
         background: rgba(255, 255, 255, 0.9);
-        border: 1px solid var(--border-light);
+        border: 1px solid rgba(255, 255, 255, 0.7);
         border-radius: 22px;
-        box-shadow: 0 20px 60px rgba(17, 24, 39, 0.14);
-        backdrop-filter: blur(28px);
+        box-shadow: 0 24px 80px rgba(28, 27, 45, 0.12), 0 8px 28px rgba(109, 40, 217, 0.08), 0 0 0 1px var(--border-light);
+        backdrop-filter: saturate(180%) blur(28px);
+        -webkit-backdrop-filter: saturate(180%) blur(28px);
         padding: 1.7rem 1.5rem;
       }
       .login-card h2 {
@@ -108,6 +114,7 @@
       }
       .login-footer a {
         color: var(--accent-blue);
+        font-weight: 500;
       }
       .login-footer a:hover {
         color: var(--accent-blue-hover);

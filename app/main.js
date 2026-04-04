@@ -81,6 +81,7 @@ app.get("/call-ringtone.mp3", (_req, res) => {
 });
 
 app.get("/healthz", (_req, res) => {
+  console.log("[healthcheck] /healthz pinged");
   res.type("text/plain").send("ok");
 });
 
@@ -119,26 +120,11 @@ const server = http.createServer(app);
 
 attachSocketIO(server);
 
-const wss = new WebSocketServer({ server, path: "/ws" });
-
-wss.on("connection", (ws) => {
-  manager.connect(ws);
-
-  ws.on("message", (message) => {
-    manager.handleClientMessage(ws, message.toString());
-  });
-
-  ws.on("close", () => {
-    manager.disconnect(ws);
-  });
-
-  ws.on("error", () => {
-    manager.disconnect(ws);
-  });
-});
+// wss deprecated in favor of Socket.IO
 
 // Default to 8003 so websocket/socket.io clients can connect without manual env changes.
-const PORT = Number(process.env.PORT || 8003);
+// Default to 8080 for standard cloud environments (Railway, etc)
+const PORT = Number(process.env.PORT || 8080);
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
   if (AUTH_DISABLED) {

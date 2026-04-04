@@ -64,14 +64,16 @@
         margin-top: 0.75rem;
       }
       .err {
-        color: #f87171;
+        color: #c62828;
         font-size: 0.85rem;
         margin-top: 0.35rem;
       }
     </style>
     <style>
       body {
-        background: var(--bg-app);
+        background-color: var(--bg-app);
+        background-image: radial-gradient(ellipse 100% 60% at 50% -20%, rgba(124, 58, 237, 0.08), transparent 50%);
+        background-attachment: fixed;
       }
       .admin-wrap h1 {
         letter-spacing: -0.3px;
@@ -97,7 +99,7 @@
       .row input[type="number"]:focus {
         outline: none;
         border-color: var(--accent-blue);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        box-shadow: 0 0 0 3px var(--accent-focus-ring);
       }
       @media (max-width: 720px) {
         .admin-wrap {

@@ -232,8 +232,8 @@ export function attachSocketIO(httpServer) {
             type: m.msg_type || m.type,
             file_path: m.file_path,
             client_msg_id: m.client_msg_id || null,
-            raw_timestamp: m.timestamp,
-            timestamp: fmtTime(m.timestamp),
+            raw_timestamp: m.raw_timestamp || m.timestamp,
+            timestamp: m.raw_timestamp ? m.timestamp : fmtTime(m.timestamp),
             is_me: Number(m.sender_id) === Number(u.id),
             is_read: m.is_read || false,
           };
@@ -283,8 +283,8 @@ export function attachSocketIO(httpServer) {
             type: m.msg_type || m.type,
             file_path: m.file_path,
             client_msg_id: m.client_msg_id || null,
-            raw_timestamp: m.timestamp,
-            timestamp: fmtTime(m.timestamp),
+            raw_timestamp: m.raw_timestamp || m.timestamp,
+            timestamp: m.raw_timestamp ? m.timestamp : fmtTime(m.timestamp),
             is_me: Number(m.sender_id) === Number(u.id),
             is_read: m.is_read || false,
           };

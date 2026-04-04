@@ -30,9 +30,13 @@
         line-height: 1.45;
       }
       .login-card {
-        border: 1px solid var(--border);
-        background: var(--surface);
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        background: rgba(255, 255, 255, 0.88);
         padding: 1.35rem 1.25rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-panel), 0 0 0 1px var(--border-light);
+        backdrop-filter: saturate(180%) blur(24px);
+        -webkit-backdrop-filter: saturate(180%) blur(24px);
       }
       .login-card h2 {
         margin: 0 0 1rem;
@@ -74,7 +78,20 @@
         text-underline-offset: 3px;
       }
       .login-footer a:hover {
-        color: var(--text);
+        color: var(--accent-blue-hover);
+      }
+      .login-page {
+        background-color: var(--bg-app);
+        background-image: radial-gradient(ellipse 100% 80% at 50% -30%, rgba(124, 58, 237, 0.12), transparent 55%),
+          radial-gradient(circle at 100% 100%, rgba(109, 40, 217, 0.06), transparent 42%),
+          radial-gradient(circle, rgba(109, 40, 217, 0.07) 0.65px, transparent 0.65px);
+        background-size: auto, auto, 20px 20px;
+      }
+      .login-wrap h1 {
+        background: linear-gradient(135deg, #1c1c1e 0%, #4c1d95 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
       }
     </style>
   </head>

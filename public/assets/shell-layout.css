@@ -1,11 +1,12 @@
-/* Layout shell — greyscale UI only; hook styles to your design system later. */
+/* Layout shell — light purple / Apple-style (matches app.css tokens conceptually) */
 :root {
-  --bg: #0f0f10;
-  --surface: #1a1a1c;
-  --border: #2e2e32;
-  --text: #e8e8ea;
-  --muted: #8b8b90;
-  --accent: #c4c4c8;
+  --bg: #f7f5fb;
+  --surface: rgba(255, 255, 255, 0.88);
+  --border: #e4dff0;
+  --text: #1c1c1e;
+  --muted: #636366;
+  --accent: #6d28d9;
+  --accent-soft: rgba(109, 40, 217, 0.1);
 }
 
 * {
@@ -15,9 +16,13 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  background: radial-gradient(120% 80% at 50% 0%, #252528 0%, var(--bg) 55%);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  background-color: var(--bg);
+  background-image: radial-gradient(ellipse 100% 70% at 50% -20%, rgba(124, 58, 237, 0.09), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(109, 40, 217, 0.05), transparent 50%);
+  background-attachment: fixed;
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 .hidden {
@@ -35,27 +40,34 @@ body {
 .card {
   width: min(400px, 100%);
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 22px;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 24px 80px rgba(28, 27, 45, 0.1), 0 8px 24px rgba(109, 40, 217, 0.07), 0 0 0 1px var(--border);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
 }
 
 .card h1 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
 }
 
 .tag {
-  margin: 0.25rem 0 1rem;
-  font-size: 0.75rem;
+  margin: 0.35rem 0 1rem;
+  font-size: 0.72rem;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
+  font-weight: 600;
 }
 
 .block-title {
   font-size: 0.9rem;
   margin: 0 0 0.75rem;
+  font-weight: 600;
 }
 
 .field {
@@ -68,33 +80,57 @@ body {
 }
 
 .field input {
-  padding: 0.5rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: #121214;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: #f3f1f8;
   color: var(--text);
+  font: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .btn {
   font: inherit;
-  padding: 0.55rem 1rem;
-  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
   border: 1px solid transparent;
   cursor: pointer;
   margin-top: 0.25rem;
+  font-weight: 600;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .btn.primary {
-  background: var(--accent);
-  color: #111;
+  background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 55%, #5b21b6 100%);
+  color: #fff;
   width: 100%;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.28);
+}
+
+.btn.primary:hover {
+  box-shadow: 0 6px 20px rgba(109, 40, 217, 0.35);
+}
+
+.btn.primary:active {
+  transform: scale(0.98);
 }
 
 .btn.ghost {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.6);
   color: var(--text);
   border-color: var(--border);
   width: 100%;
+}
+
+.btn.ghost:hover {
+  background: #fff;
+  border-color: #d4cce8;
 }
 
 .admin-link {
@@ -106,9 +142,10 @@ body {
   background: none;
   border: none;
   padding: 0;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--muted);
   text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
@@ -120,10 +157,10 @@ body {
 
 .admin-panel .block-title {
   font-size: 0.72rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 .dash-shell {
@@ -138,7 +175,9 @@ body {
   justify-content: space-between;
   padding: 0.85rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .pill {
@@ -147,9 +186,10 @@ body {
   letter-spacing: 0.06em;
   padding: 0.2rem 0.45rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--muted);
   margin-left: 0.5rem;
+  background: var(--accent-soft);
 }
 
 .dash-body {
@@ -161,11 +201,30 @@ body {
 }
 
 .placeholder {
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1.5px dashed #d4cce8;
+  border-radius: 16px;
   padding: 2rem;
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.card a {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.card a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.85rem;
 }

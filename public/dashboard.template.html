@@ -77,7 +77,7 @@
         cursor: pointer;
       }
       .external-member-row:hover {
-        background: rgba(255,255,255,0.05);
+        background: var(--accent-tint-05);
       }
       .external-member-av {
         width: 32px;
@@ -121,7 +121,7 @@
         cursor: pointer;
       }
       .modal-member-item:hover {
-        background: rgba(0, 122, 255, 0.05);
+        background: var(--accent-tint-05);
       }
       .modal-member-checkbox {
         width: 18px;
@@ -228,7 +228,7 @@
         color: var(--text-primary);
         background: var(--bg-card-hover);
         border-color: var(--border-active);
-        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.12);
+        box-shadow: 0 0 0 2px var(--accent-tint-12);
       }
       .rail-badge {
         position: absolute;
@@ -340,9 +340,9 @@
         flex-shrink: 0;
       }
       .sidebar-plus:hover {
-        color: var(--text);
-        border-color: rgba(255, 255, 255, 0.2);
-        background: rgba(255, 255, 255, 0.04);
+        color: var(--accent-blue);
+        border-color: var(--border-active);
+        background: var(--accent-tint-05);
       }
       .group-list {
         flex: 1;
@@ -366,11 +366,11 @@
         border-radius: 0;
       }
       .group-row:hover {
-        background: rgba(255, 255, 255, 0.04);
+        background: var(--accent-tint-05);
         color: var(--text);
       }
       .group-row[aria-current="true"] {
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--accent-tint-08);
         color: var(--text);
       }
       .group-row-avatar {
@@ -567,7 +567,7 @@
         min-width: 80px !important;
         align-self: flex-start !important;
         padding: 0.75rem 1rem;
-        background: #f2f2f7;
+        background: #f3f1f8;
         border: none;
         border-radius: 18px;
         border-bottom-left-radius: 4px;
@@ -1383,7 +1383,7 @@
       .chat-input-wrap:focus-within {
         border-color: var(--accent-blue);
         background: var(--bg-card);
-        box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+        box-shadow: 0 0 0 4px var(--accent-tint-12);
       }
     </style>
     <style>
@@ -1426,7 +1426,7 @@
       .member-rail-btn[aria-pressed="true"],
       .group-row[aria-current="true"] {
         border-color: var(--border-active);
-        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.12);
+        box-shadow: 0 0 0 2px var(--accent-tint-12);
       }
       .group-row,
       .dms-member-row,
@@ -1464,7 +1464,7 @@
       select:focus {
         outline: none;
         border-color: var(--accent-blue);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        box-shadow: 0 0 0 3px var(--accent-focus-ring);
       }
       .btn.primary {
         background: var(--accent-blue);
@@ -1506,8 +1506,8 @@
         background: transparent;
       }
       .member-center {
-        background-color: #f8f8fa;
-        background-image: radial-gradient(circle, rgba(0, 0, 0, 0.055) 1px, transparent 1px);
+        background-color: var(--bg-app);
+        background-image: radial-gradient(circle, rgba(109, 40, 217, 0.07) 1px, transparent 1px);
         background-size: 24px 24px;
       }
       .chat-header,
@@ -1589,10 +1589,10 @@
       .chat-messages {
         margin-top: 0;
         border-radius: 0;
-        background-color: #f8f8fa;
-        background-image: radial-gradient(circle, #d1d1d6 0.7px, transparent 0.7px);
+        background-color: var(--bg-app);
+        background-image: radial-gradient(circle, rgba(109, 40, 217, 0.09) 0.65px, transparent 0.65px);
         background-size: 22px 22px;
-        box-shadow: inset 0 0 0 1px rgba(226, 226, 231, 0.65);
+        box-shadow: inset 0 0 0 1px rgba(228, 223, 240, 0.85);
         padding: 0.85rem;
       }
       .chat-composer,
@@ -1678,7 +1678,7 @@
       }
       .mention-item:hover,
       .mention-item.is-active {
-        background: rgba(0, 122, 255, 0.12);
+        background: var(--accent-tint-12);
       }
       .activity-feed {
         display: flex;
@@ -1737,23 +1737,23 @@
       .member-rail-btn[aria-pressed="true"] {
         background: var(--accent-blue);
         color: #fff;
-        box-shadow: 0 10px 22px rgba(0, 122, 255, 0.35);
+        box-shadow: 0 10px 22px var(--accent-glow);
       }
       .member-rail-btn[aria-pressed="true"] svg {
         stroke: #fff;
       }
       .group-row[aria-current="true"],
       .dms-member-row.is-active {
-        background: rgba(0, 122, 255, 0.12);
+        background: var(--accent-tint-12);
         color: var(--text-primary);
         box-shadow: none;
       }
       .group-row[aria-current="true"] .group-row-avatar,
       .dms-member-row.is-active .dms-member-avatar {
-        box-shadow: inset 0 0 0 2px rgba(0, 122, 255, 0.24);
+        box-shadow: inset 0 0 0 2px var(--accent-avatar-ring);
       }
       .chat-bubble:not(.is-me) {
-        background: #f2f2f7;
+        background: #f3f1f8;
         border: none;
         box-shadow: none;
       }
@@ -4769,7 +4769,7 @@
             activityEvents.slice(0, 80).forEach(function (ev, idx) {
               var row = document.createElement("div");
               row.className = "activity-item";
-              row.style.background = ev.is_seen ? "var(--bg-card)" : "rgba(59, 130, 246, 0.08)";
+              row.style.background = ev.is_seen ? "var(--bg-card)" : "var(--accent-tint-08)";
               row.style.padding = "1rem";
               row.style.borderRadius = "12px";
               row.style.marginBottom = "0.75rem";
@@ -4840,7 +4840,7 @@
             activityEvents.slice(0, 30).forEach(function (ev) {
               var row = document.createElement("div");
               row.className = "activity-item";
-              row.style.background = ev.is_seen ? "transparent" : "rgba(255,255,255,0.05)";
+              row.style.background = ev.is_seen ? "transparent" : "var(--accent-tint-05)";
               row.style.padding = "0.75rem";
               row.style.borderRadius = "8px";
               row.style.marginBottom = "0.5rem";

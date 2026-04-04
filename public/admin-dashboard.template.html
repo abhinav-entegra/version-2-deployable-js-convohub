@@ -9,25 +9,25 @@
   <link rel="stylesheet" href="/assets/app.css" />
   <style>
     :root {
-      --bg-app: #ffffff;
+      --bg-app: #f7f5fb;
       --bg-card: #ffffff;
-      --bg-card-hover: #fafafa;
-      --bg-header: #ffffff;
-      --bg-dock: #ffffff;
-      --bg-input: #f8f8fb;
+      --bg-card-hover: #faf9fc;
+      --bg-header: rgba(255, 255, 255, 0.78);
+      --bg-dock: rgba(255, 255, 255, 0.82);
+      --bg-input: #f3f1f8;
       --bg-panel: #ffffff;
-      --bg-rail: #f1f1f4;
+      --bg-rail: #f0ebf9;
 
-      --border: #e2e2e7;
-      --border-light: #ebebef;
-      --border-active: #007aff;
+      --border: #e4dff0;
+      --border-light: #efeaf7;
+      --border-active: #7c3aed;
 
-      --text-primary: #1d1d1f;
-      --text-secondary: #6e6e73;
-      --text-dim: #aeaeb2;
+      --text-primary: #1c1c1e;
+      --text-secondary: #636366;
+      --text-dim: #98989d;
 
-      --accent: #007aff;
-      --accent-hover: #0066d6;
+      --accent: #6d28d9;
+      --accent-hover: #5b21b6;
       --accent-green: #30d158;
       --accent-red: #ff3b30;
 
@@ -81,8 +81,8 @@
       padding: 0 1.25rem;
       background: var(--bg-header);
       border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
+      backdrop-filter: saturate(180%) blur(28px);
+      -webkit-backdrop-filter: saturate(180%) blur(28px);
       z-index: 100;
       flex-shrink: 0;
     }
@@ -212,7 +212,7 @@
 
     .eco-avatar-btn[aria-pressed="true"] {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--accent-focus-ring, rgba(109, 40, 217, 0.2));
       background: var(--bg-card);
       color: var(--accent);
     }
@@ -352,9 +352,9 @@
     }
 
     .admin-nav li button[aria-current="page"] {
-      background: var(--accent);
+      background: linear-gradient(180deg, #8b5cf6 0%, var(--accent) 100%);
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+      box-shadow: 0 4px 16px rgba(109, 40, 217, 0.28);
     }
 
     .admin-nav-sub {
@@ -516,7 +516,7 @@
       width: 40px;
       height: 40px;
       border-radius: 12px;
-      background: rgba(0, 122, 255, 0.08);
+      background: var(--accent-tint-08, rgba(109, 40, 217, 0.09));
       color: var(--accent);
       display: grid;
       place-items: center;
@@ -568,7 +568,7 @@
       width: 40px;
       height: 40px;
       border-radius: 12px;
-      background: rgba(0, 122, 255, 0.08);
+      background: var(--accent-tint-08, rgba(109, 40, 217, 0.09));
       display: grid;
       place-items: center;
       color: var(--accent);
@@ -627,13 +627,13 @@
     textarea:focus {
       border-color: var(--accent);
       background: var(--bg-card);
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--accent-focus-ring, rgba(109, 40, 217, 0.2));
     }
 
     .btn-cc,
     .btn {
       width: 100%;
-      background: var(--accent);
+      background: linear-gradient(180deg, #8b5cf6 0%, var(--accent) 55%, var(--accent-hover) 100%);
       color: white;
       border: none;
       border-radius: var(--radius-md);
@@ -646,7 +646,7 @@
       justify-content: center;
       gap: 0.6rem;
       transition: all var(--transition);
-      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+      box-shadow: 0 4px 16px rgba(109, 40, 217, 0.22);
     }
 
     .btn-cc svg,

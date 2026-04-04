@@ -78,6 +78,7 @@ router.get("/get_messages", async (req, res) => {
   function mapMessagesWithSenders(msgs, senderById) {
     return msgs.map((m) => {
       const sender = senderById.get(Number(m.sender_id));
+      const raw = m.raw_timestamp || m.timestamp;
       return {
         id: m.id,
         sender_email: sender?.email || "Unknown",
@@ -88,8 +89,8 @@ router.get("/get_messages", async (req, res) => {
         type: m.msg_type || m.type,
         file_path: m.file_path,
         client_msg_id: m.client_msg_id || null,
-        raw_timestamp: m.timestamp,
-        timestamp: fmtTime(m.timestamp),
+        raw_timestamp: raw,
+        timestamp: m.raw_timestamp ? m.timestamp : fmtTime(m.timestamp),
         is_me: Number(m.sender_id) === Number(u.id),
         is_read: m.is_read,
       };
@@ -310,28 +311,31 @@ router.post("/update_group", async (req, res) => {
   res.json({ success: true });
 });
 
-router.get("/get_group_visibility", async (req, res) => {
+router.get("/get_group_visibility", requireAuth, async (req, res) => {
   const u = req.user;
-  const groupId = Number(req.query.group_id);
-  if (!groupId) return res.status(400).json({ error: "group_id required" });
+  const groupId = Number(req.query.group_id || req.query.channel_id);
+  if (!groupId) return res.status(400).json({ error: "group_id or channel_id required" });
 
   const role = (u.role || "").toLowerCase();
   const isLead = (u.team_role || "").toLowerCase() === "teamlead";
   const isAdmin = ["admin", "superadmin"].includes(role);
 
-  if (!isAdmin && !isLead) {
+  const memberIds = await store.listExplicitMemberIds(groupId);
+  
+  if (!isAdmin && !isLead && !memberIds.has(Number(u.id)) && !memberIds.has(String(u.id))) {
     return res.status(403).json({ error: "Unauthorized" });
   }
 
-  const memberIds = await store.listExplicitMemberIds(groupId);
   res.json([...memberIds]);
 });
 
-router.post("/update_group_visibility", async (req, res) => {
+router.post("/update_group_visibility", requireAuth, async (req, res) => {
   const u = req.user;
-  const { group_id, user_ids } = req.body || {};
-  if (!group_id || !Array.isArray(user_ids)) {
-    return res.status(400).json({ error: "group_id and user_ids array required" });
+  const { group_id, channel_id, user_ids } = req.body || {};
+  const targetId = group_id || channel_id;
+  
+  if (!targetId || !Array.isArray(user_ids)) {
+    return res.status(400).json({ error: "group_id/channel_id and user_ids array required" });
   }
 
   const role = (u.role || "").toLowerCase();
@@ -342,7 +346,7 @@ router.post("/update_group_visibility", async (req, res) => {
     return res.status(403).json({ error: "Only team leads or admins can update visibility" });
   }
 
-  await store.replaceExplicitMembers(group_id, user_ids.map(Number));
+  await store.replaceExplicitMembers(targetId, user_ids.map(Number));
   res.json({ success: true });
 });
 
@@ -1336,34 +1340,8 @@ router.get("/get_dm_allowlist_candidates", async (req, res) => {
 });
 
 
-router.get("/get_group_visibility", async (req, res) => {
-  const u = req.user;
-  const channelId = Number(req.query.channel_id);
-  if (!channelId) return res.status(400).json({ error: "channel_id required" });
-  const g = await store.getChannelById(channelId);
-  if (!g || !(await ctx.canViewChannelResolved(u, g))) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  const explicit = await store.listExplicitMemberIds(g.id);
-  res.json([...explicit]);
-});
 
-router.post("/update_group_visibility", async (req, res) => {
-  const u = req.user;
-  const { channel_id: channelId, user_ids: userIds } = req.body || {};
-  if (!channelId || !Array.isArray(userIds)) return res.status(400).json({ error: "Invalid payload" });
-  
-  const isLead = (u.team_role || "").toLowerCase() === "teamlead" || ["admin", "superadmin"].includes((u.role || "").toLowerCase());
-  if (!isLead) return res.status(403).json({ error: "Only team leads can manage group visibility." });
-  
-  const g = await store.getChannelById(channelId);
-  if (!g) return res.status(404).json({ error: "Group not found" });
-
-  await store.replaceExplicitMembers(g.id, userIds.map(Number));
-  res.json({ success: true });
-});
-
-router.post("/create_external_group", async (req, res) => {
+router.post("/create_external_group", requireAuth, async (req, res) => {
   const u = req.user;
   const isLead = (u.team_role || "").toLowerCase() === "teamlead" || ["admin", "superadmin"].includes((u.role || "").toLowerCase());
   if (!isLead) return res.status(403).json({ error: "Only team leads can create external channels." });
@@ -1387,10 +1365,8 @@ router.post("/create_external_group", async (req, res) => {
   res.json({ success: true, group_id: g.id });
 });
 
-router.get("/get_ecosystem_directory", async (req, res) => {
+router.get("/get_ecosystem_directory", requireAuth, async (req, res) => {
   const u = req.user;
-  const isLead = (u.team_role || "").toLowerCase() === "teamlead" || ["admin", "superadmin"].includes((u.role || "").toLowerCase());
-  if (!isLead) return res.status(403).json({ error: "Forbidden" });
   
   const members = await store.listUsersByWorkspaceId(u.workspace_id);
   res.json(members.filter(m => (m.role || "").toLowerCase() !== "superadmin").map(m => ({
