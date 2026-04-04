@@ -4,6 +4,9 @@
   "description": "Hybrid Slack-style backend with Express, Supabase, and WebSockets",
   "type": "module",
   "main": "app/main.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node app/main.js",
     "dev": "nodemon app/main.js"
