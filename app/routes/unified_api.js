@@ -72,8 +72,11 @@ router.get("/get_messages", async (req, res) => {
   const markRead = String(req.query.mark_read || "1") !== "0";
   const markVisit = String(req.query.mark_visit || "1") !== "0";
   const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50));
-  const beforeTs = req.query.before ? String(req.query.before) : null;
-  const afterTs = req.query.after ? String(req.query.after) : null;
+  function isIso(s) { 
+    return s && typeof s === "string" && /^\d{4}-\d{2}-\d{2}/.test(s); 
+  }
+  const beforeTs = isIso(req.query.before) ? req.query.before : null;
+  const afterTs = isIso(req.query.after) ? req.query.after : null;
 
   function mapMessagesWithSenders(msgs, senderById) {
     return msgs.map((m) => {

@@ -201,29 +201,49 @@ class CallUI {
     const id = "call-remote-" + peerId;
     let el = document.getElementById(id);
 
-    if (mode === "video") {
-      if (!el) {
-        el = document.createElement("video");
-        el.id = id;
-        el.className = "call-video";
-        el.autoplay = true;
-        el.playsInline = true;
-        el.muted = false;
-        this.callRemoteGrid.appendChild(el);
-      }
-      el.srcObject = stream;
-      el.play().catch(() => {});
+    const hasVideo = stream.getVideoTracks().length > 0;
+    const needsVideoKind = (mode === "video" || hasVideo);
+
+    if (!el) {
+      el = document.createElement(needsVideoKind ? "video" : "audio");
+      el.id = id;
+      el.className = needsVideoKind ? "call-video" : "call-audio";
+      el.autoplay = true;
+      el.playsInline = true;
+      el.muted = false;
+      if (!needsVideoKind) el.controls = true;
+      this.callRemoteGrid.appendChild(el);
     } else {
-      if (!el) {
-        el = document.createElement("audio");
-        el.id = id;
-        el.className = "call-audio";
-        el.controls = true;
-        this.callRemoteGrid.appendChild(el);
+      // Upgrade element if we now have video but were previously only audio.
+      if (needsVideoKind && el.tagName.toLowerCase() === "audio") {
+        const newEl = document.createElement("video");
+        newEl.id = id;
+        newEl.className = "call-video";
+        newEl.autoplay = true;
+        newEl.playsInline = true;
+        newEl.muted = false;
+        el.parentNode.replaceChild(newEl, el);
+        el = newEl;
       }
-      el.srcObject = stream;
-      el.play().catch(() => {});
     }
+
+    // Use a persistent MediaStream to avoid track overwriting.
+    if (!el._remoteStream) {
+      el._remoteStream = new MediaStream();
+      el.srcObject = el._remoteStream;
+    }
+    
+    stream.getTracks().forEach(t => {
+      const alreadyHas = el._remoteStream.getTracks().find(x => x.id === t.id || (x.kind === t.kind && x.label === t.label));
+      if (!alreadyHas) {
+        el._remoteStream.addTrack(t);
+      }
+    });
+
+    // Explicitly call play to ensure playback starts in all browsers.
+    el.play().catch((err) => {
+      console.warn("[CallUI] Remote playback failed:", err);
+    });
   }
 
   removeRemoteStream(peerId) {

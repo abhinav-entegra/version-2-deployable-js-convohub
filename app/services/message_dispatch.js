@@ -89,7 +89,7 @@ export async function dispatchOutboundMessage(u, body) {
   }
 
   if (clientMsgId) {
-    const existing = await store.findMessageByClientMsgId(u.id, clientMsgId);
+    const existing = await sqlite.findMessageByClientMsgId(u.id, clientMsgId);
     if (existing) {
       return { ok: true, msg_id: existing.id };
     }

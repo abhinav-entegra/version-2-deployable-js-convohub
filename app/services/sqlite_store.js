@@ -117,6 +117,17 @@ export async function getMessageById(id) {
   };
 }
 
+export async function findMessageByClientMsgId(senderId, clientMsgId) {
+  const row = db.prepare("SELECT * FROM messages WHERE sender_id = ? AND client_msg_id = ? LIMIT 1").get(senderId, clientMsgId);
+  if (!row) return null;
+  return {
+    ...row,
+    timestamp: fmtTime(row.timestamp),
+    raw_timestamp: row.timestamp,
+    is_me: false,
+  };
+}
+
 export async function listMessagesForChannel(channelName, workspaceId, viewerWorkspaceId, opts = {}) {
   const limit = Math.max(1, Math.min(200, Number(opts.limit) || 50));
   let sql = "SELECT * FROM messages WHERE channel_name = ? AND workspace_id = ?";

@@ -195,14 +195,20 @@ export function attachSocketIO(httpServer) {
           if (ack) ack({ error: "Group not found" });
           return;
         }
+        function isIso(s) { 
+          return s && typeof s === "string" && /^\d{4}-\d{2}-\d{2}/.test(s); 
+        }
+        const beforeTs = isIso(data.before) ? data.before : null;
+        const afterTs = isIso(data.after) ? data.after : null;
+
         let msgs = await sqlite.listMessagesForChannel(channelName, u.workspace_id, u.workspace_id, {
           limit,
-          beforeTs: data.before,
-          afterTs: data.after,
+          beforeTs,
+          afterTs,
         });
         if (!msgs || msgs.length === 0) {
           msgs = await store.listMessagesForChannel(channelName, u.workspace_id, u.workspace_id, {
-            limit, beforeTs: data.before, afterTs: data.after
+            limit, beforeTs, afterTs
           });
         }
         if (markVisit) await sqlite.upsertChannelVisit(u.id, channelName);
@@ -251,9 +257,13 @@ export function attachSocketIO(httpServer) {
         const limit = Math.max(1, Math.min(200, Number(data.limit) || 50));
         const markRead = data.mark_read !== false;
 
-        let msgs = await sqlite.listDmMessages(u.id, rid, u.workspace_id, { limit, beforeTs: data.before, afterTs: data.after });
+        function isIso(s) { return s && /^\d{4}-\d{2}-\d{2}/.test(String(s)); }
+        const beforeTs = isIso(data.before) ? String(data.before) : null;
+        const afterTs = isIso(data.after) ? String(data.after) : null;
+
+        let msgs = await sqlite.listDmMessages(u.id, rid, u.workspace_id, { limit, beforeTs, afterTs });
         if (!msgs || msgs.length === 0) {
-          msgs = await store.listDmMessages(u.id, rid, { limit, beforeTs: data.before, afterTs: data.after });
+          msgs = await store.listDmMessages(u.id, rid, { limit, beforeTs, afterTs });
         }
 
         if (markRead) await sqlite.markDmReadForReceiver(u.id, rid);

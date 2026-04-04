@@ -132,4 +132,12 @@ server.listen(PORT, "0.0.0.0", () => {
       `[convohub] AUTH_DISABLED: using guest user id ${GUEST_USER_ID} when no JWT (set AUTH_DISABLED=0 or unset to require login)`
     );
   }
+}).on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`[FATAL] Port ${PORT} is already in use by another process. Kill it or use PORT env var.`);
+    process.exit(1);
+  } else {
+    console.error("[FATAL] Server error:", err);
+    process.exit(1);
+  }
 });
