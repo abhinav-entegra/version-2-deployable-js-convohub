@@ -8,6 +8,36 @@ import * as ctx from "./context_helpers.js";
 import { getUserByEmail } from "./auth_service.js";
 import { manager } from "../utils/websocket_manager.js";
 
+// ── In-process hot-path caches (avoids repeated Supabase round-trips per message) ──
+
+/** Workspace cache: workspace_id → { data, expiresAt } — 30s TTL */
+const _wsCache = new Map();
+async function getCachedWorkspace(workspaceId) {
+  const now = Date.now();
+  const cached = _wsCache.get(workspaceId);
+  if (cached && cached.expiresAt > now) return cached.data;
+  const ws = await store.getWorkspace(workspaceId);
+  _wsCache.set(workspaceId, { data: ws, expiresAt: now + 30_000 });
+  return ws;
+}
+
+/** Channel list cache: workspace_id → { data, expiresAt } — 12s TTL */
+const _channelCache = new Map();
+async function getCachedChannels(workspaceId) {
+  const now = Date.now();
+  const cached = _channelCache.get(workspaceId);
+  if (cached && cached.expiresAt > now) return cached.data;
+  const rows = await store.listChannelsByWorkspace(workspaceId);
+  _channelCache.set(workspaceId, { data: rows, expiresAt: now + 12_000 });
+  return rows;
+}
+
+/** Bust channel cache after any channel mutation (create/update/delete). */
+export function bustChannelCache(workspaceId) {
+  if (workspaceId != null) _channelCache.delete(workspaceId);
+  else _channelCache.clear();
+}
+
 /** Native `/ws` + in-process hooks. Socket.IO clients listen via separate wiring if needed. */
 function emitRoster(workspaceId) {
   const wid = Number(workspaceId);
@@ -30,7 +60,8 @@ function fmtTime(iso) {
 }
 
 /**
- * Shared channel/DM send pipeline (REST + future Socket.IO).
+ * Shared channel/DM send pipeline (REST + Socket.IO).
+ * Uses in-process caches for workspace and channel lookups to minimize Supabase round-trips.
  * @returns {{ ok: true, msg_id: number } | { error: string, status?: number }}
  */
 export async function dispatchOutboundMessage(u, body) {
@@ -53,7 +84,8 @@ export async function dispatchOutboundMessage(u, body) {
     };
   }
 
-  const ws = await store.getWorkspace(u.workspace_id);
+  // Use cached workspace — avoids a Supabase round-trip on every message
+  const ws = await getCachedWorkspace(u.workspace_id);
   const senderWorkspace = ws;
 
   if (receiverId != null) {
@@ -76,7 +108,9 @@ export async function dispatchOutboundMessage(u, body) {
       };
     }
   } else if (channelName) {
-    const channel = await ctx.getChannelInContext(u, { channelName });
+    // Fast channel lookup using in-process cache instead of full ctx.getChannelInContext
+    const allChannels = await getCachedChannels(u.workspace_id);
+    const channel = allChannels.find((c) => c.name === channelName) || null;
     if (!channel) return { error: "Group not found", status: 404 };
     const canView = await ctx.canViewChannelResolved(u, channel);
     if (!canView) return { error: "Group not found", status: 404 };
@@ -108,7 +142,9 @@ export async function dispatchOutboundMessage(u, body) {
   });
 
   if (channelName && content) {
-    const channel = await ctx.getChannelInContext(u, { channelName });
+    // Use cached channels for mention lookup too
+    const allChannels = await getCachedChannels(u.workspace_id);
+    const channel = allChannels.find((c) => c.name === channelName) || null;
     if (channel) {
       const lower = String(content).toLowerCase();
       if (lower.includes("@all")) {
@@ -150,6 +186,25 @@ export async function dispatchOutboundMessage(u, body) {
     }
   }
 
+  const messagePayload = {
+    id: newMsg.id,
+    client_msg_id: clientMsgId || null,
+    sender_email: u.email || "Unknown",
+    sender_name: u.name || (u.email || "Unknown").split("@")[0],
+    sender_id: u.id,
+    sender_pic: u.profile_pic_url || null,
+    content: newMsg.content || "",
+    type: newMsg.msg_type || msgType,
+    file_path: newMsg.file_path || null,
+    raw_timestamp: newMsg.raw_timestamp || newMsg.timestamp,
+    timestamp: newMsg.raw_timestamp ? newMsg.timestamp : fmtTime(newMsg.timestamp),
+    is_read: newMsg.is_read,
+    channel_name: newMsg.channel_name || null,
+    receiver_id: newMsg.receiver_id || null,
+    workspace_id: newMsg.workspace_id || null,
+  };
+
+  // Emit on native /ws transport
   manager.broadcastJson({
     type: "new_message",
     workspace_id: u.workspace_id,
@@ -157,46 +212,14 @@ export async function dispatchOutboundMessage(u, body) {
     channel_name: channelName || null,
     receiver_id: receiverId != null ? Number(receiverId) : null,
     sender_id: u.id,
-    message: {
-      id: newMsg.id,
-      client_msg_id: clientMsgId || null,
-      sender_email: u.email || "Unknown",
-      sender_name: u.name || (u.email || "Unknown").split("@")[0],
-      sender_id: u.id,
-      sender_pic: u.profile_pic_url || null,
-      content: newMsg.content || "",
-      type: newMsg.msg_type || msgType,
-      file_path: newMsg.file_path || null,
-      raw_timestamp: newMsg.raw_timestamp || newMsg.timestamp,
-      timestamp: newMsg.raw_timestamp ? newMsg.timestamp : fmtTime(newMsg.timestamp),
-      is_read: newMsg.is_read,
-      channel_name: newMsg.channel_name || null,
-      receiver_id: newMsg.receiver_id || null,
-      workspace_id: newMsg.workspace_id || null,
-    },
+    message: messagePayload,
   });
 
+  // Emit on Socket.IO transport (real-time push to all connected clients)
   try {
     const { getIO } = await import("../socketio_server.js");
     const io = getIO();
     if (io) {
-      const messagePayload = {
-        id: newMsg.id,
-        client_msg_id: clientMsgId || null,
-        sender_email: u.email || "Unknown",
-        sender_name: u.name || (u.email || "Unknown").split("@")[0],
-        sender_id: u.id,
-        sender_pic: u.profile_pic_url || null,
-        content: newMsg.content || "",
-        type: newMsg.msg_type || msgType,
-        file_path: newMsg.file_path || null,
-        raw_timestamp: newMsg.raw_timestamp || newMsg.timestamp,
-        timestamp: newMsg.raw_timestamp ? newMsg.timestamp : fmtTime(newMsg.timestamp),
-        is_read: newMsg.is_read,
-        channel_name: newMsg.channel_name || null,
-        receiver_id: newMsg.receiver_id || null,
-        workspace_id: newMsg.workspace_id || null,
-      };
       const evt = {
         msg_id: newMsg.id,
         workspace_id: u.workspace_id,
@@ -206,11 +229,11 @@ export async function dispatchOutboundMessage(u, body) {
         message: messagePayload,
       };
       if (receiverId != null) {
+        // DM: only push to the two participants
         io.to(`user_${u.id}`).emit("new_message", evt);
         io.to(`user_${Number(receiverId)}`).emit("new_message", evt);
       } else {
-        // Ultra-fast fanout for low latency: emit once to workspace room.
-        // Client filters by channel_name and existing visibility constraints.
+        // Channel: broadcast to whole workspace room; clients filter by channel_name
         io.to(`ws_${u.workspace_id}`).emit("new_message", evt);
       }
     }

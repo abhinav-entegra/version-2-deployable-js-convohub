@@ -3553,16 +3553,34 @@
         if (wasAtBottom || msgEl.scrollTop === 0) msgEl.scrollTop = msgEl.scrollHeight;
       }
 
-      // Background poll for external channels (new messages from others)
+      // External channel real-time message handler (driven by unified socket new_message event)
+      function handleExternalRealtimeMessage(msg) {
+        if (!msg || !msg.channel_name) return;
+        var g = externalGroups && externalGroups.find(function(x) { return x.name === msg.channel_name; });
+        if (!g) return;
+        // Only update visible channel live; others update on next open.
+        if (String(g.id) !== String(selectedExternalChannelId)) return;
+        var msgEl = document.getElementById("external-chat-messages");
+        if (!msgEl) return;
+        var existing = msgEl.querySelector('[data-msg-id="' + String(msg.id || "") + '"]');
+        if (existing) return; // already rendered
+        msg.is_me = Number(msg.sender_id) === Number(serverUser.id);
+        if (!window.externalChatRows) window.externalChatRows = [];
+        window.externalChatRows.push(msg);
+        appendExternalBubble(msg);
+      }
+
+      // Background poll for external channels — kept as a FALLBACK when socket is unavailable
       var externalPollTimer = null;
       function startExternalPolling(channelName) {
         stopExternalPolling();
+        // Use a generous 8s interval — socket handles real-time, this is just the fallback.
         externalPollTimer = setInterval(function() {
-          if (selectedExternalChannelId) {
-            var g = externalGroups.find(x => String(x.id) === String(selectedExternalChannelId));
+          if (!realtimeReady && selectedExternalChannelId) {
+            var g = externalGroups.find(function(x) { return String(x.id) === String(selectedExternalChannelId); });
             if (g) silentSyncExternalMessages(g.name, null);
           }
-        }, 5000);
+        }, 8000);
       }
       function stopExternalPolling() {
         if (externalPollTimer) { clearInterval(externalPollTimer); externalPollTimer = null; }
@@ -4947,9 +4965,10 @@
         if (socket && realtimeReady) {
           var socketRows = await new Promise(function (resolve) {
             var isDone = false;
+            // 200ms timeout — tight enough for LAN/low-latency, falls back to REST on slow connections
             var tm = setTimeout(function () {
               if (!isDone) { isDone = true; resolve("FALLBACK"); }
-            }, 600);
+            }, 200);
             socket.emit("get_channel_messages", {
               channel_name: groupId,
               limit: 50,
@@ -5297,42 +5316,69 @@
         }, 100);
       }
 
-      async function ensureRealtimeSocket() {
-        if (realtimeReady && realtimeSocket) return realtimeSocket;
-        if (typeof io !== "function") return null;
-        var token = boot && boot.socket_bootstrap_token ? boot.socket_bootstrap_token : null;
-        if (!token) {
-          var tr = await fetch("/api/socket_token", { credentials: "include" });
-          var tj = await tr.json().catch(function () {
-            return null;
+      // Single persistent socket connect promise — guarantees only ONE connection is ever made.
+      var _realtimeConnectPromise = null;
+
+      function ensureRealtimeSocket() {
+        // Already connected and ready — return immediately.
+        if (realtimeReady && realtimeSocket) return Promise.resolve(realtimeSocket);
+        // Already connecting — return the same promise (no duplicate connect).
+        if (_realtimeConnectPromise) return _realtimeConnectPromise;
+        if (typeof io !== "function") return Promise.resolve(null);
+
+        _realtimeConnectPromise = (async function() {
+          var token = boot && boot.socket_bootstrap_token ? boot.socket_bootstrap_token : null;
+          if (!token) {
+            try {
+              var tr = await fetch("/api/socket_token", { credentials: "include" });
+              var tj = await tr.json().catch(function() { return null; });
+              token = tj && tj.token ? tj.token : null;
+            } catch(e) { token = null; }
+          }
+          if (!token) { _realtimeConnectPromise = null; return null; }
+
+          var socket = io(location.origin, {
+            auth: { token: token },
+            path: "/socket.io",
+            transports: ["websocket", "polling"],
+            reconnection: true,
+            reconnectionDelay: 500,
+            reconnectionDelayMax: 3000,
           });
-          token = tj && tj.token ? tj.token : null;
-        }
-        if (!token) return null;
-        var socket = io(location.origin, {
-          auth: { token: token },
-          path: "/socket.io",
-          transports: ["websocket", "polling"],
-          reconnection: true,
-        });
-        realtimeSocket = socket;
-        if (!realtimeHandlersBound) {
-          socket.on("connect", function () {
+          realtimeSocket = socket;
+
+          // Bind all events ONCE.
+          socket.on("connect", function() {
             realtimeReady = true;
+            console.log("[realtime] connected");
+            // Share the connected socket with the call module so we only have 1 connection.
+            callSocket = socket;
+            callSocketReady = true;
             recoverMissedMessagesAfterReconnect();
           });
-          socket.on("disconnect", function () {
+          socket.on("disconnect", function() {
             realtimeReady = false;
+            callSocketReady = false;
+            console.log("[realtime] disconnected");
           });
-          socket.on("new_message", function (evt) {
+          socket.on("connect_error", function(err) {
+            realtimeReady = false;
+            callSocketReady = false;
+            console.warn("[realtime] connect_error", err && err.message);
+          });
+
+          // ── Messaging events ──
+          socket.on("new_message", function(evt) {
             handleRealtimeMessageEvent(evt);
+            // Also handle external channel messages in real-time.
+            if (evt && evt.message && evt.message.channel_name) {
+              var exG = externalGroups && externalGroups.find(function(x) { return x.name === evt.message.channel_name; });
+              if (exG) handleExternalRealtimeMessage(evt.message);
+            }
           });
-          socket.on("workspace_roster_changed", function () {
-            // Only refresh the sidebar list — do NOT call renderHomeCenter()
-            // which wipes and rebuilds the active chat, causing the visible "refresh" flash.
-            loadServerGroups(true).then(function () {
+          socket.on("workspace_roster_changed", function() {
+            loadServerGroups(true).then(function() {
               renderGroupList();
-              // Only update the chat header/meta if a group is active, never wipe messages
               var g = selectedGroupId ? getGroup(selectedGroupId) : null;
               if (g) {
                 var titleEl = document.getElementById("chat-header-title");
@@ -5340,9 +5386,85 @@
               }
             });
           });
+
+          // ── Call / signaling events (unified with realtime socket) ──
+          socket.on("incoming-call", function(data) {
+            try {
+              var fromId = Number(data && data.from);
+              var offer = (data && data.offer) || null;
+              var type = ((data && data.type) || "voice") === "video" ? "video" : "voice";
+              if (!Number.isFinite(fromId) || !offer) return;
+              callPendingIncoming[fromId] = { offer: offer, type: type };
+              if (!callActive) {
+                callUiContext = (data && data.context) || null;
+                callMode = type;
+                clearRemoteGrid();
+                showCallModal(false);
+                startCallRingtone();
+                var callerLabel = (data && data.from_email) ? data.from_email : ("User " + fromId);
+                var contextLabel = (data && data.context && data.context.chat && data.context.chat.name) ? String(data.context.chat.name) : "";
+                showCallToast({ kind: "incoming", title: (type === "video" ? "📹" : "📞") + " Incoming " + type + " call", subtitle: "From: " + callerLabel + (contextLabel ? " · " + contextLabel : ""), showActions: true });
+                showCallPanel({ visible: true, title: "Incoming " + type + " call" + (data && data.from_email ? " from " + data.from_email : ""), subtitle: contextLabel || "—", canAccept: true, canReject: true });
+                setCallAcceptRejectState({ canAccept: true, canReject: true });
+              }
+            } catch(e) { console.error("incoming-call handler error", e); }
+          });
+          socket.on("call-answered", function(data) {
+            try {
+              var fromId = Number(data && data.from);
+              var answer = data && data.answer;
+              if (!Number.isFinite(fromId) || !answer) return;
+              var pc = callPcsByPeer.get(fromId);
+              if (!pc) return;
+              pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(function(e) { console.error("setRemoteDescription failed", e); });
+            } catch(e) { console.error("call-answered handler error", e); }
+          });
+          socket.on("ice-candidate", function(data) {
+            try {
+              var fromId = Number(data && data.from);
+              var candidate = data && data.candidate;
+              if (!Number.isFinite(fromId) || !candidate) return;
+              var pc = callPcsByPeer.get(fromId);
+              if (!pc) { if (!callPendingIce[fromId]) callPendingIce[fromId] = []; callPendingIce[fromId].push(candidate); return; }
+              pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(function() {});
+            } catch(e) { console.error("ice-candidate handler error", e); }
+          });
+          socket.on("call-ended", function(data) {
+            try {
+              stopCallRingtone();
+              var fromId = Number(data && data.from);
+              if (!Number.isFinite(fromId)) return;
+              var wasOutgoing = callActive && callOutgoingTargets && callOutgoingTargets.includes(fromId);
+              var wasRinging = !!(callPendingIncoming && callPendingIncoming[fromId]);
+              if (callPcsByPeer.get(fromId)) cleanupPeer(fromId);
+              if (callPendingIncoming) delete callPendingIncoming[fromId];
+              stopLocalStream();
+              if (callPcsByPeer.size === 0) {
+                callActive = false; callMode = null; callOutgoingTargets = [];
+                clearRemoteGrid(); clearCallUiLocalPreview();
+                if (callEndBtn) callEndBtn.disabled = true;
+                setCallAcceptRejectState({ canAccept: false, canReject: false });
+                showCallModal(false); showCallPanel({ visible: false }); hideCallToast();
+                var decMsg = wasOutgoing ? "❌ Call declined" : wasRinging ? "📵 Missed call" : "📴 Call ended";
+                var decSub = wasOutgoing ? "The other person declined your call." : wasRinging ? "You missed an incoming call." : "The call has ended.";
+                showCallToast({ kind: "declined", title: decMsg, subtitle: decSub, showActions: false, dismissMs: 4000 });
+              }
+            } catch(e) { console.error("call-ended handler error", e); }
+          });
+
           realtimeHandlersBound = true;
-        }
-        return socket;
+
+          // Wait for connect (or connect_error) so callers know status.
+          return new Promise(function(resolve) {
+            socket.once("connect", function() { resolve(socket); });
+            socket.once("connect_error", function() { resolve(socket); });
+            // Safety timeout — don't block callers forever.
+            setTimeout(function() { resolve(socket); }, 4000);
+          });
+        })();
+
+        _realtimeConnectPromise.catch(function() { _realtimeConnectPromise = null; });
+        return _realtimeConnectPromise;
       }
 
       function startGroupPolling() {
@@ -5980,9 +6102,10 @@
         if (socket && realtimeReady) {
           var socketRows = await new Promise(function (resolve) {
             var isDone = false;
+            // 200ms timeout — tight enough for LAN/low-latency, falls back to REST on slow connections
             var tm = setTimeout(function () {
               if (!isDone) { isDone = true; resolve("FALLBACK"); }
-            }, 600);
+            }, 200);
             socket.emit("get_dm_messages", {
               receiver_id: targetId,
               limit: 50,
@@ -6409,27 +6532,25 @@
         } else {
           fetch("/api/get_messages?receiver_id=" + encodeURIComponent(activeDmUserId) + "&mark_read=1&limit=1", { credentials: "include" }).catch(function () { });
         }
-        // Keep unread badges reasonably fresh, but do not block switching feel.
-        refreshDmUnreadCounts();
         startDmPolling();
-
-        // Check permissions
-        try {
-          var permResp = await fetch("/api/can_chat?target_id=" + activeDmUserId);
-          var permData = await permResp.json();
-          var canChat = permData.can_chat;
-
-          var normalComposer = document.getElementById("dm-composer-normal");
-          var restrictedComposer = document.getElementById("dm-composer-restricted");
-
-          if (!canChat) {
-            if (normalComposer) normalComposer.classList.add("hidden");
-            if (restrictedComposer) restrictedComposer.classList.remove("hidden");
-          } else {
-            if (normalComposer) normalComposer.classList.remove("hidden");
-            if (restrictedComposer) restrictedComposer.classList.add("hidden");
-          }
-        } catch (e) { console.error(e); }
+        // Non-blocking perm check — shows chat immediately, permissions update in background
+        fetch("/api/can_chat?target_id=" + activeDmUserId, { credentials: "include" })
+          .then(function(r) { return r.json(); })
+          .then(function(permData) {
+            var canChat = permData && permData.can_chat;
+            var normalComposer = document.getElementById("dm-composer-normal");
+            var restrictedComposer = document.getElementById("dm-composer-restricted");
+            if (Number(activeDmUserId) !== nextDmId) return; // user switched DM, skip stale update
+            if (!canChat) {
+              if (normalComposer) normalComposer.classList.add("hidden");
+              if (restrictedComposer) restrictedComposer.classList.remove("hidden");
+            } else {
+              if (normalComposer) normalComposer.classList.remove("hidden");
+              if (restrictedComposer) restrictedComposer.classList.add("hidden");
+            }
+          }).catch(function(e) { console.warn("[DM] perm check failed", e); });
+        // Refresh unread badges in background — do not block UI
+        setTimeout(function() { refreshDmUnreadCounts(); }, 150);
       }
 
       async function sendDmMessage() {
@@ -6896,189 +7017,15 @@
         rejectIncomingCalls();
       });
 
+      // ensureCallSocket now delegates to the unified realtime socket.
+      // This eliminates the second WebSocket connection that was causing extra latency.
       async function ensureCallSocket() {
-        if (callSocketReady && callSocket) return callSocket;
-        if (callConnectingPromise) return callConnectingPromise;
-        callConnectingPromise = (async function () {
-          if (typeof io !== "function") {
-            throw new Error("Socket.IO client not loaded.");
-          }
-          // Prefer the already-injected bootstrap token to avoid extra /api calls.
-          var bootToken = boot && boot.socket_bootstrap_token ? boot.socket_bootstrap_token : null;
-          var token = bootToken || null;
-          if (!token) {
-            // Fallback if for some reason boot token is not present.
-            var tokenResp = await fetch("/api/socket_token", { credentials: "include" });
-            var tokenText = await tokenResp.text();
-            var tokenJson = null;
-            try {
-              tokenJson = tokenText ? JSON.parse(tokenText) : null;
-            } catch {
-              tokenJson = null;
-            }
-            if (!tokenResp.ok || !tokenJson?.token) {
-              throw new Error(
-                (tokenJson && (tokenJson.error || tokenJson.detail)) ||
-                (tokenText && typeof tokenText === "string" ? tokenText.slice(0, 160) : "") ||
-                "Could not get socket token."
-              );
-            }
-            token = tokenJson.token;
-          }
-
-          // Connect to the same origin where the dashboard is served.
-          // This ensures compatibility with integrated Socket.IO servers (e.g. Railway or local 8080).
-          var socketBaseUrl = location.origin;
-          console.log("Call socket connecting to:", socketBaseUrl);
-
-          // Socket.IO client must connect to the same port where the server is running.
-          var socket = io(socketBaseUrl, {
-            auth: { token: token },
-            path: "/socket.io",
-            transports: ["websocket", "polling"],
-          });
+        var socket = await ensureRealtimeSocket();
+        if (socket) {
           callSocket = socket;
-
-          socket.on("connect", function () {
-            callSocketReady = true;
-            setCallStatus("Connected. Waiting for call…");
-          });
-          socket.on("connect_error", function (err) {
-            callSocketReady = false;
-            var msg = err && err.message ? err.message : String(err || "");
-            if (!msg) msg = "unknown error";
-            console.error("Call socket connect_error:", err);
-            setCallStatus("Socket connection failed: " + msg);
-          });
-
-          socket.on("incoming-call", function (data) {
-            try {
-              var fromId = Number(data?.from);
-              var offer = data?.offer || null;
-              var type = (data?.type || "voice") === "video" ? "video" : "voice";
-              if (!Number.isFinite(fromId) || !offer) return;
-              callPendingIncoming[fromId] = { offer: offer, type: type };
-
-              if (!callActive) {
-                callUiContext = data?.context || null;
-                callMode = type;
-                clearRemoteGrid();
-                showCallModal(false);
-                startCallRingtone();
-
-                // Show floating toast
-                var callerLabel = data?.from_email ? data.from_email : ("User " + fromId);
-                var contextLabel = (data?.context && data.context.chat && data.context.chat.name) ? String(data.context.chat.name) : "";
-                showCallToast({
-                  kind: "incoming",
-                  title: (type === "video" ? "📹" : "📞") + " Incoming " + type + " call",
-                  subtitle: "From: " + callerLabel + (contextLabel ? " · " + contextLabel : ""),
-                  showActions: true
-                });
-
-                // Also update legacy panel (hidden but keep for compat)
-                showCallPanel({
-                  visible: true,
-                  title: "Incoming " + type + " call" + (data?.from_email ? " from " + data.from_email : ""),
-                  subtitle: contextLabel || "—",
-                  canAccept: true,
-                  canReject: true
-                });
-                setCallAcceptRejectState({ canAccept: true, canReject: true });
-              }
-            } catch (e) {
-              console.error("incoming-call handler error", e);
-            }
-          });
-
-          socket.on("call-answered", function (data) {
-            try {
-              var fromId = Number(data?.from);
-              var answer = data?.answer;
-              if (!Number.isFinite(fromId) || !answer) return;
-              var pc = callPcsByPeer.get(fromId);
-              if (!pc) return;
-              pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(function (e) {
-                console.error("setRemoteDescription (answer) failed", e);
-              });
-            } catch (e) {
-              console.error("call-answered handler error", e);
-            }
-          });
-
-          socket.on("ice-candidate", function (data) {
-            try {
-              var fromId = Number(data?.from);
-              var candidate = data?.candidate;
-              if (!Number.isFinite(fromId) || !candidate) return;
-              var pc = callPcsByPeer.get(fromId);
-              if (!pc) {
-                if (!callPendingIce[fromId]) callPendingIce[fromId] = [];
-                callPendingIce[fromId].push(candidate);
-                return;
-              }
-              pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(function () { });
-            } catch (e) {
-              console.error("ice-candidate handler error", e);
-            }
-          });
-
-          socket.on("call-ended", function (data) {
-            try {
-              stopCallRingtone();
-              var fromId = Number(data?.from);
-              if (!Number.isFinite(fromId)) return;
-
-              var wasOutgoingCall = callActive && callOutgoingTargets && callOutgoingTargets.includes(fromId);
-              var wasIncomingRinging = !!(callPendingIncoming && callPendingIncoming[fromId]);
-
-              if (callPcsByPeer.get(fromId)) cleanupPeer(fromId);
-              if (callPendingIncoming) delete callPendingIncoming[fromId];
-              stopLocalStream();
-
-              if (callPcsByPeer.size === 0) {
-                callActive = false;
-                callMode = null;
-                callOutgoingTargets = [];
-                clearRemoteGrid();
-                clearCallUiLocalPreview();
-                if (callEndBtn) callEndBtn.disabled = true;
-                setCallAcceptRejectState({ canAccept: false, canReject: false });
-                showCallModal(false);
-                showCallPanel({ visible: false });
-                hideCallToast();
-
-                var declinedMsg = wasOutgoingCall ? "❌ Call declined"
-                  : wasIncomingRinging ? "📵 Missed call"
-                    : "📴 Call ended";
-                var declinedSub = wasOutgoingCall ? "The other person declined your call."
-                  : wasIncomingRinging ? "You missed an incoming call."
-                    : "The call has ended.";
-
-                showCallToast({
-                  kind: "declined",
-                  title: declinedMsg,
-                  subtitle: declinedSub,
-                  showActions: false,
-                  dismissMs: 4000
-                });
-              }
-            } catch (e) {
-              console.error("call-ended handler error", e);
-            }
-          });
-
-
-          return new Promise(function (resolve) {
-            socket.on("connect", function () {
-              resolve(socket);
-            });
-            socket.on("connect_error", function () {
-              resolve(socket);
-            });
-          });
-        })();
-        return callConnectingPromise;
+          callSocketReady = realtimeReady;
+        }
+        return socket;
       }
 
       // Ensure this client is always listening for incoming calls.
@@ -7757,6 +7704,12 @@
       }
       renderDmMemberList();
 
+      // Connect to realtime socket IMMEDIATELY on page load — no delay.
+      // This ensures incoming messages arrive as fast as possible.
+      ensureRealtimeSocket().catch(function(e) {
+        console.warn("[boot] realtime socket init failed:", e);
+      });
+
       setTimeout(function () {
         // Prime groups as early as possible in background so switching is instant.
         loadServerGroups(true).then(function () {
@@ -7766,9 +7719,8 @@
         refreshDmUnreadCounts();
         refreshChannelUnreadCounts();
         refreshServerActivity();
-        ensureRealtimeSocket();
         startNotificationPolling();
-      }, 300); // Wait a bit for background sync
+      }, 100); // Reduced delay: socket is already connecting, these are just background syncs
       console.log("ConvoHub Workspace Initialized.");
     })();
   </script>
