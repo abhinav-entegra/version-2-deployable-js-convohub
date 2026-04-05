@@ -3066,6 +3066,7 @@
   <audio id="call-ringtone-audio" src="/call-ringtone.mp3" preload="auto" loop></audio>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/chat_socket_client.js"></script>
   <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.21.3/index.js"></script>
   <script type="application/json" id="dashboard-boot-json">__DASHBOARD_BOOT_JSON__</script>
   <!-- Call system handled locally in template script -->
@@ -5340,7 +5341,8 @@
           var socket = io(location.origin, {
             auth: { token: token },
             path: "/socket.io",
-            transports: ["websocket", "polling"],
+            transports: ["websocket"],
+            upgrade: false,
             reconnection: true,
             reconnectionDelay: 500,
             reconnectionDelayMax: 3000,

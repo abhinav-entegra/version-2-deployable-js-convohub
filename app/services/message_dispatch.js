@@ -204,42 +204,43 @@ export async function dispatchOutboundMessage(u, body) {
     workspace_id: newMsg.workspace_id || null,
   };
 
-  // Emit on native /ws transport
-  manager.broadcastJson({
-    type: "new_message",
-    workspace_id: u.workspace_id,
-    msg_id: newMsg.id,
-    channel_name: channelName || null,
-    receiver_id: receiverId != null ? Number(receiverId) : null,
-    sender_id: u.id,
-    message: messagePayload,
-  });
-
-  // Emit on Socket.IO transport (real-time push to all connected clients)
-  try {
-    const { getIO } = await import("../socketio_server.js");
-    const io = getIO();
-    if (io) {
-      const evt = {
-        msg_id: newMsg.id,
+  // Defer realtime fan-out to next tick so HTTP/socket ack paths return without waiting on emit I/O.
+  setImmediate(() => {
+    try {
+      manager.broadcastJson({
+        type: "new_message",
         workspace_id: u.workspace_id,
+        msg_id: newMsg.id,
         channel_name: channelName || null,
         receiver_id: receiverId != null ? Number(receiverId) : null,
         sender_id: u.id,
         message: messagePayload,
-      };
-      if (receiverId != null) {
-        // DM: only push to the two participants
-        io.to(`user_${u.id}`).emit("new_message", evt);
-        io.to(`user_${Number(receiverId)}`).emit("new_message", evt);
-      } else {
-        // Channel: broadcast to whole workspace room; clients filter by channel_name
-        io.to(`ws_${u.workspace_id}`).emit("new_message", evt);
-      }
+      });
+    } catch (e) {
+      console.warn("[dispatch] native ws broadcast failed", e);
     }
-  } catch (e) {
-    console.warn("[dispatch] socket realtime emit failed", e);
-  }
+
+    import("../socketio_server.js")
+      .then(({ getIO }) => {
+        const io = getIO();
+        if (!io) return;
+        const evt = {
+          msg_id: newMsg.id,
+          workspace_id: u.workspace_id,
+          channel_name: channelName || null,
+          receiver_id: receiverId != null ? Number(receiverId) : null,
+          sender_id: u.id,
+          message: messagePayload,
+        };
+        if (receiverId != null) {
+          io.to(`user_${u.id}`).emit("new_message", evt);
+          io.to(`user_${Number(receiverId)}`).emit("new_message", evt);
+        } else {
+          io.to(`ws_${u.workspace_id}`).emit("new_message", evt);
+        }
+      })
+      .catch((e) => console.warn("[dispatch] socket realtime emit failed", e));
+  });
 
   return { ok: true, msg_id: newMsg.id };
 }

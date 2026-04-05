@@ -7,6 +7,7 @@ import * as store from "./services/org_store.js";
 import * as sqlite from "./services/sqlite_store.js";
 import * as ctx from "./services/context_helpers.js";
 import { dispatchOutboundMessage } from "./services/message_dispatch.js";
+import { attachChatAliases } from "./socket/socket_handler.js";
 
 let ioRef = null;
 const onlineUserIds = new Set();
@@ -34,12 +35,19 @@ function parseCookie(header, name) {
 /**
  * Socket.IO on /socket.io/ — parity with Flask-SocketIO realtime_handlers (calls, presence).
  */
-export function attachSocketIO(httpServer) {
+export function attachSocketIO(httpServer, expressApp = null) {
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: { origin: true, credentials: true },
-    transports: ["websocket", "polling"],
+    transports: ["websocket"],
+    pingInterval: 20_000,
+    pingTimeout: 15_000,
+    maxHttpBufferSize: 5e6,
   });
+
+  if (expressApp && typeof expressApp.set === "function") {
+    expressApp.set("io", io);
+  }
 
   io.use(async (socket, next) => {
     try {
@@ -317,6 +325,8 @@ export function attachSocketIO(httpServer) {
         if (typeof ack === "function") ack({ error: "internal_error", status: 500 });
       }
     });
+
+    attachChatAliases(socket, io, u);
 
     socket.on("disconnect", () => {
       onlineUserIds.delete(u.id);

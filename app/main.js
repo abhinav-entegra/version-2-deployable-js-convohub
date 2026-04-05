@@ -118,7 +118,7 @@ app.use("/api", unifiedApiRouter);
 
 const server = http.createServer(app);
 
-attachSocketIO(server);
+attachSocketIO(server, app);
 
 // wss deprecated in favor of Socket.IO
 

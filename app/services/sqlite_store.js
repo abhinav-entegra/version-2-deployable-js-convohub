@@ -9,6 +9,14 @@ const dbPath = path.join(__dirname, "..", "local_data.db");
 // Initialize SQLite database
 const db = new Database(dbPath);
 
+// WAL + pragmas: faster concurrent reads/writes (aligned with perf-oriented sqlite_store drop-in)
+db.pragma("journal_mode = WAL");
+db.pragma("synchronous = NORMAL");
+db.pragma("cache_size = -32000");
+db.pragma("temp_store = MEMORY");
+db.pragma("mmap_size = 268435456");
+db.pragma("busy_timeout = 5000");
+
 // Create tables if they don't exist
 db.exec(`
   CREATE TABLE IF NOT EXISTS messages (
@@ -62,6 +70,32 @@ db.exec(`
     workspace_id INTEGER,
     PRIMARY KEY (user_id, workspace_id)
   );
+`);
+
+// Hot-path indexes (idempotent)
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_msg_channel_ws_ts
+    ON messages (channel_name, workspace_id, timestamp DESC)
+    WHERE channel_name IS NOT NULL;
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_client_sender
+    ON messages (sender_id, client_msg_id)
+    WHERE client_msg_id IS NOT NULL;
+
+  CREATE INDEX IF NOT EXISTS idx_msg_dm_pair_ws
+    ON messages (workspace_id, sender_id, receiver_id, timestamp DESC)
+    WHERE channel_name IS NULL;
+
+  CREATE INDEX IF NOT EXISTS idx_msg_dm_pair_ws_rev
+    ON messages (workspace_id, receiver_id, sender_id, timestamp DESC)
+    WHERE channel_name IS NULL;
+
+  CREATE INDEX IF NOT EXISTS idx_msg_unread_dm
+    ON messages (receiver_id, is_read, timestamp DESC)
+    WHERE channel_name IS NULL;
+
+  CREATE INDEX IF NOT EXISTS idx_channel_visits_user_ch
+    ON channel_visits (user_id, channel_name);
 `);
 
 /**
