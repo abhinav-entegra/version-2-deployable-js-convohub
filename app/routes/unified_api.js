@@ -45,6 +45,48 @@ function fmtTime(iso) {
   }
 }
 
+/**
+ * Notifications reference `message_id` from the live SQLite pipeline, but legacy code
+ * looked up rows only in Supabase — activity/notifications appeared empty or broken.
+ * Resolve from Supabase first, then SQLite, with the same permission checks as chat APIs.
+ */
+async function resolveMessageForUser(u, messageId) {
+  const mid = Number(messageId);
+  if (!Number.isFinite(mid)) return null;
+
+  let m = await store.getMessageById(mid);
+  if (!m) {
+    const sm = await sqlite.getMessageById(mid);
+    if (!sm) return null;
+    m = {
+      id: sm.id,
+      sender_id: sm.sender_id,
+      receiver_id: sm.receiver_id,
+      channel_name: sm.channel_name,
+      content: sm.content,
+      msg_type: sm.msg_type,
+      file_path: sm.file_path,
+      client_msg_id: sm.client_msg_id,
+      workspace_id: sm.workspace_id,
+      is_read: sm.is_read,
+      timestamp: sm.raw_timestamp || sm.timestamp,
+    };
+  }
+
+  if (m.channel_name) {
+    const channel = await ctx.getChannelInContext(u, { channelName: m.channel_name });
+    if (!channel || !(await ctx.canViewChannelResolved(u, channel))) return null;
+  } else {
+    const me = Number(u.id);
+    const s = Number(m.sender_id);
+    const r = Number(m.receiver_id);
+    if (me !== s && me !== r) return null;
+  }
+
+  const msgType = m.msg_type || m.type;
+  return { ...m, msg_type: msgType };
+}
+
 router.get("/socket_token", (req, res) => {
   const token = createAccessTokenFromUser(req.user, SOCKET_TOKEN_EXPIRE_MINUTES);
   res.json({ token });
@@ -63,22 +105,11 @@ router.get("/get_message_by_id", async (req, res) => {
   const u = req.user;
   const id = Number(req.query.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id required" });
-  const m = await store.getMessageById(id);
+  const m = await resolveMessageForUser(u, id);
   if (!m) return res.status(404).json({ error: "Message not found" });
 
-  if (m.channel_name) {
-    const channel = await ctx.getChannelInContext(u, { channelName: m.channel_name });
-    if (!channel || !(await ctx.canViewChannelResolved(u, channel))) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-  } else {
-    const me = Number(u.id);
-    const s = Number(m.sender_id);
-    const r = Number(m.receiver_id);
-    if (me !== s && me !== r) return res.status(403).json({ error: "Forbidden" });
-  }
-
   const sender = (await store.listUsersByIds([m.sender_id]))[0];
+  const rawTs = m.timestamp;
   return res.json({
     id: m.id,
     sender_email: sender?.email || "Unknown",
@@ -89,8 +120,8 @@ router.get("/get_message_by_id", async (req, res) => {
     type: m.msg_type,
     file_path: m.file_path,
     client_msg_id: m.client_msg_id || null,
-    raw_timestamp: m.timestamp,
-    timestamp: fmtTime(m.timestamp),
+    raw_timestamp: rawTs,
+    timestamp: fmtTime(rawTs),
     is_me: Number(m.sender_id) === Number(u.id),
     is_read: m.is_read,
     channel_name: m.channel_name || null,
@@ -121,7 +152,7 @@ router.get("/get_activity", async (req, res) => {
   const u = req.user;
   const notifs = await store.listNotifications(u.id, 20);
   const messageIds = [...new Set(notifs.map((n) => n.message_id))];
-  const messages = messageIds.length ? await Promise.all(messageIds.map((id) => store.getMessageById(id))) : [];
+  const messages = messageIds.length ? await Promise.all(messageIds.map((id) => resolveMessageForUser(u, id))) : [];
   const byId = Object.fromEntries(messages.filter(Boolean).map((m) => [m.id, m]));
   const sendersNeeded = [...new Set(messages.filter(Boolean).map((m) => m.sender_id))];
   const senders = sendersNeeded.length ? await store.listUsersByIds(sendersNeeded) : [];

@@ -13,11 +13,24 @@
       --member-rail: 56px;
       --member-side: 220px;
       --member-right: calc(var(--member-rail) + var(--member-side));
+      --bg-app: #f5f5f7;
+      --bg-card: #ffffff;
+      --bg-header: rgba(255, 255, 255, 0.8);
+      --bg-dock: rgba(255, 255, 255, 0.82);
+      --border: #e2e2e7;
+      --border-light: #ebebef;
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
       --accent-blue: #007aff;
-      --accent-blue-hover: #0063cc;
-      --bg-header: rgba(255, 255, 255, 0.82);
-      --bg-dock: rgba(255, 255, 255, 0.95);
-      --shadow-panel: 0 32px 64px -12px rgba(0, 0, 0, 0.14);
+      --accent-blue-hover: #0066d6;
+      --accent-green: #30d158;
+      --accent-red: #ff3b30;
+      --accent-amber: #ff9f0a;
+      --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-panel: 0 8px 40px rgba(0, 0, 0, 0.12), 0 2px 10px rgba(0, 0, 0, 0.05);
+      --radius-md: 14px;
+      --spring: cubic-bezier(0.32, 0.72, 0, 1);
     }
 
     .external-right-header {
@@ -4911,6 +4924,34 @@
         return div;
       }
 
+      function chatRowId(m) {
+        if (!m) return "";
+        if (m.id != null && m.id !== "") return String(m.id);
+        return String(m.client_msg_id || "");
+      }
+
+      /** Same row count but last row upgraded (e.g. optimistic → server ack): patch DOM, no full clear. */
+      function tryPatchSameLengthBubbles(box, list, renderKey, setLastKey) {
+        var bubbles = box.querySelectorAll(".chat-bubble");
+        if (!list.length || !bubbles.length || list.length !== bubbles.length) return false;
+        var nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+        var domIds = Array.prototype.map.call(bubbles, function (b) {
+          return String(b.getAttribute("data-msg-id") || "");
+        });
+        var listIds = list.map(chatRowId);
+        var j = 0;
+        while (j < list.length && domIds[j] === listIds[j]) j++;
+        if (j >= list.length) {
+          setLastKey(renderKey);
+          return true;
+        }
+        if (j !== list.length - 1) return false;
+        box.replaceChild(createMessageBubble(list[j]), bubbles[j]);
+        setLastKey(renderKey);
+        if (nearBottom) box.scrollTop = box.scrollHeight;
+        return true;
+      }
+
       function renderChatMessages(rows) {
         var box = document.getElementById("chat-messages");
         if (!box) return;
@@ -4919,6 +4960,8 @@
 
         var stickToBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
         var list = (rows || []).slice(-120);
+
+        if (tryPatchSameLengthBubbles(box, list, key, function (k) { lastGroupRenderKey = k; })) return;
 
         // Incremental heuristic: if we already have some rendered, and the new list
         // starts with current last rendered IDs, just append the delta.
@@ -6047,6 +6090,8 @@
           box.appendChild(empty);
           return;
         }
+
+        if (tryPatchSameLengthBubbles(box, list, key, function (k) { lastDmRenderKey = k; })) return;
 
         var currentBubbles = box.querySelectorAll(".chat-bubble");
         if (currentBubbles.length > 0 && list.length > currentBubbles.length) {
@@ -7672,16 +7717,21 @@
           if (!document.getElementById("profile-modal").classList.contains("hidden")) closeProfileModal();
         }
       });
+      var visibilityResyncTimer = null;
       document.addEventListener("visibilitychange", function () {
         if (document.hidden) return;
-        refreshDmUnreadCounts();
-        refreshChannelUnreadCounts();
-        if (document.getElementById("view-home") && document.getElementById("view-home").classList.contains("is-active")) {
-          refreshGroupMessages(false);
-        }
-        if (document.getElementById("view-dms") && document.getElementById("view-dms").classList.contains("is-active")) {
-          refreshDmMessages(false);
-        }
+        if (visibilityResyncTimer) clearTimeout(visibilityResyncTimer);
+        visibilityResyncTimer = setTimeout(function () {
+          visibilityResyncTimer = null;
+          refreshDmUnreadCounts();
+          refreshChannelUnreadCounts();
+          if (document.getElementById("view-home") && document.getElementById("view-home").classList.contains("is-active")) {
+            refreshGroupMessages(false);
+          }
+          if (document.getElementById("view-dms") && document.getElementById("view-dms").classList.contains("is-active")) {
+            refreshDmMessages(false);
+          }
+        }, 650);
       });
 
       applyAvatarUi();
